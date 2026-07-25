@@ -19,14 +19,29 @@ dependencies:
   # Routing
   go_router: ^16.0.0
 
-  # Networking
+  # Network
   dio: ^5.9.0
 
   # Local Storage
   shared_preferences: ^2.5.3
 
+  # Responsive UI
+  flutter_screenutil: ^5.9.3
+
   # Fonts
   google_fonts: ^6.3.1
+
+  # SVG Support
+  flutter_svg: ^2.2.0
+
+  # Loading Animations
+  flutter_spinkit: ^5.2.2
+
+  # Toast Messages
+  fluttertoast: ^8.2.12
+
+  # Date Formatting
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -41,3 +56,10 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+
+  # fonts:
+  #   - family: Poppins
+  #     fonts:
+  #       - asset: assets/fonts/Poppins-Regular.ttf
+  #       - asset: assets/fonts/Poppins-Bold.ttf
+  #         weight: 700
