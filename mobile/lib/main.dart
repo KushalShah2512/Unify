@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'core/routes/app_router.dart';
+import 'core/theme/app_theme.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -11,20 +14,11 @@ class GigsyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Gigsy',
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Gigsy',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
+      theme: AppTheme.lightTheme,
+      routerConfig: appRouter,
     );
   }
 }
