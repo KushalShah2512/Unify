@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
-import 'text_theme.dart';
+import '../constants/app_constants.dart';
+import 'app_text_theme.dart';
 
 class AppTheme {
   AppTheme._();
@@ -13,7 +14,8 @@ class AppTheme {
 
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
-      brightness: Brightness.light,
+      primary: AppColors.primary,
+      surface: AppColors.surface,
     ),
 
     textTheme: AppTextTheme.lightTextTheme,
@@ -27,11 +29,9 @@ class AppTheme {
 
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        minimumSize: const Size(double.infinity, 55),
+        minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppConstants.radius),
         ),
       ),
     ),
@@ -41,16 +41,15 @@ class AppTheme {
       fillColor: Colors.white,
 
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppConstants.radius),
       ),
 
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.grey),
+        borderRadius: BorderRadius.circular(AppConstants.radius),
       ),
 
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppConstants.radius),
         borderSide: const BorderSide(
           color: AppColors.primary,
           width: 2,

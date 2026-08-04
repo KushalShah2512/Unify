@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
 
-import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/splash/presentation/screens/splash_screen.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  runApp(const GigsyApp());
+  runApp(const UnifyApp());
 }
 
-class GigsyApp extends StatelessWidget {
-  const GigsyApp({super.key});
+class UnifyApp extends StatelessWidget {
+  const UnifyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
+    return MaterialApp(
+      title: "Unify",
       debugShowCheckedModeBanner: false,
-      title: 'Gigsy',
       theme: AppTheme.lightTheme,
-      routerConfig: appRouter,
+      home: const SplashScreen(),
     );
   }
 }
