@@ -7,11 +7,13 @@ const authRoutes = require("./routes/auth_routes");
 const { authenticateToken } = require("./middleware/auth_middleware");
 const { authorizeRoles } = require("./middleware/role_middleware");
 
+const studentRoutes = require("./routes/student_routes");
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
+app.use("/api/students", studentRoutes);
 
 // ====================
 // Basic Routes
@@ -68,52 +70,52 @@ app.use("/api/auth", authRoutes);
 // Protected Route
 // ====================
 
-app.get("/api/protected", authenticateToken, (req, res) => {
-  res.json({
-    message: "You accessed a protected route",
-    status: "success",
-    user: req.user,
-  });
-});
+// app.get("/api/protected", authenticateToken, (req, res) => {
+//   res.json({
+//     message: "You accessed a protected route",
+//     status: "success",
+//     user: req.user,
+//   });
+// });
 
-app.get(
-  "/api/student-only",
-  authenticateToken,
-  authorizeRoles("STUDENT"),
-  (req, res) => {
-    res.json({
-      message: "Student-only resource accessed successfully",
-      status: "success",
-      user: req.user,
-    });
-  }
-);
+// app.get(
+//   "/api/student-only",
+//   authenticateToken,
+//   authorizeRoles("STUDENT"),
+//   (req, res) => {
+//     res.json({
+//       message: "Student-only resource accessed successfully",
+//       status: "success",
+//       user: req.user,
+//     });
+//   }
+// );
 
-app.get(
-  "/api/employer-only",
-  authenticateToken,
-  authorizeRoles("EMPLOYER"),
-  (req, res) => {
-    res.json({
-      message: "Employer-only resource accessed successfully",
-      status: "success",
-      user: req.user,
-    });
-  }
-);
+// app.get(
+//   "/api/employer-only",
+//   authenticateToken,
+//   authorizeRoles("EMPLOYER"),
+//   (req, res) => {
+//     res.json({
+//       message: "Employer-only resource accessed successfully",
+//       status: "success",
+//       user: req.user,
+//     });
+//   }
+// );
 
-app.get(
-  "/api/admin-only",
-  authenticateToken,
-  authorizeRoles("ADMIN"),
-  (req, res) => {
-    res.json({
-      message: "Admin-only resource accessed successfully",
-      status: "success",
-      user: req.user,
-    });
-  }
-);
+// app.get(
+//   "/api/admin-only",
+//   authenticateToken,
+//   authorizeRoles("ADMIN"),
+//   (req, res) => {
+//     res.json({
+//       message: "Admin-only resource accessed successfully",
+//       status: "success",
+//       user: req.user,
+//     });
+//   }
+// );
 
 // ====================
 // Start Server

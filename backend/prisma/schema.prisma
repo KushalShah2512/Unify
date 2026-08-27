@@ -14,6 +14,42 @@ model User {
   role      UserRole @default(STUDENT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  studentProfile  StudentProfile?
+  employerProfile EmployerProfile?
+}
+
+model StudentProfile {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique
+  fullName     String
+  phone        String?
+  location     String?
+  bio          String?
+  education    String?
+  careerGoal   String?
+  availability String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmployerProfile {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  companyName String
+  description String?
+  industry    String?
+  website     String?
+  location    String?
+  isVerified  Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum UserRole {
