@@ -32,19 +32,64 @@ model StudentProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  skills         Skill[]
+  projects       Project[]
+  certifications Certification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Skill {
+  id        Int    @id @default(autoincrement())
+  name      String
+  level     String?
+  studentId Int
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {qa
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String?
+  technologies String?
+  projectUrl   String?
+  studentId    Int
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Certification {
+  id             Int      @id @default(autoincrement())
+  name           String
+  issuingOrg     String?
+  issueDate      DateTime?
+  credentialUrl  String?
+  studentId      Int
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model EmployerProfile {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique
-  companyName String
-  description String?
-  industry    String?
-  website     String?
-  location    String?
-  isVerified  Boolean  @default(false)
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  companyName     String
+  description     String?
+  industry        String?
+  website         String?
+  location        String?
+  isVerified      Boolean  @default(false)
+  verificationStatus VerificationStatus @default(PENDING)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -56,4 +101,10 @@ enum UserRole {
   STUDENT
   EMPLOYER
   ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

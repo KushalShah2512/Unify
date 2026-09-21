@@ -9,12 +9,29 @@ const { authorizeRoles } = require("./middleware/role_middleware");
 
 const studentRoutes = require("./routes/student_routes");
 
+const skillRoutes = require("./routes/skill_routes");
+
+const projectRoutes = require("./routes/project_routes");
+
+const certificationRoutes = require("./routes/certification_routes");
+
+const careerPassportRoutes = require("./routes/career_passport_routes");
+
+const employerRoutes = require("./routes/employer_routes");
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use("/api/students", studentRoutes);
+app.use("/api/auth", authRoutes);
 
+app.use("/api/students", studentRoutes);
+app.use("/api/students/skills", skillRoutes);
+app.use("/api/students/projects", projectRoutes);
+app.use("/api/students/certifications", certificationRoutes);
+app.use("/api/students/career-passport", careerPassportRoutes);
+
+app.use("/api/employers", employerRoutes);
 // ====================
 // Basic Routes
 // ====================
