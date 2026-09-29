@@ -1,4 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+
+import 'package:unify/core/services/api_service.dart';
+import 'package:unify/core/services/storage_service.dart';
 
 import '../widgets/auth_button.dart';
 import '../widgets/auth_textfield.dart';
@@ -21,12 +25,92 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool rememberMe = false;
 
+  final ApiService apiService = ApiService();
+
+  bool isLoading = false;
+
   @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
+
+  Future<void> login() async {
+  final email = emailController.text.trim();
+  final password = passwordController.text;
+
+  if (email.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Please enter email and password"),
+      ),
+    );
+
+    return;
+  }
+
+  setState(() {
+    isLoading = true;
+  });
+
+  try {
+    final response = await apiService.login(
+      email: email,
+      password: password,
+    );
+
+    final data = response.data;
+
+    if (response.statusCode == 200 &&
+        data["token"] != null) {
+      
+      await StorageService.saveToken(
+        data["token"],
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Login successful"),
+        ),
+      );
+
+      debugPrint("Logged in user: ${data["user"]}");
+      debugPrint("JWT saved successfully");
+    }
+  } on DioException catch (e) {
+    String message = "Login failed";
+
+    if (e.response?.data != null) {
+      message =
+          e.response?.data["message"] ?? "Login failed";
+    }
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Something went wrong"),
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -173,13 +257,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 10),
 
               AuthButton(
-
-                title: "Sign In",
-
-                onPressed: () {
-
-                },
-
+                title: isLoading ? "Signing In..." : "Sign In",
+                onPressed: isLoading ? login : login,
               ),
 
               const SizedBox(height: 30),
