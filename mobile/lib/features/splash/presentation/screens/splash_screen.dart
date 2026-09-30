@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../widgets/animated_logo.dart';
-
 import '../../../../core/services/storage_service.dart';
-import '../../../onboarding/presentation/screens/onboarding_screen.dart';
+// import '../../../onboarding/presentation/screens/onboarding_screen.dart';
+import '../widgets/animated_logo.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -55,13 +54,11 @@ class _SplashScreenState extends State<SplashScreen>
 
         if (!mounted) return;
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                const OnboardingScreen(),
-          ),
-        );
+        if (completed) {
+          context.go('/login');
+        } else {
+          context.go('/onboarding');
+        }
       },
     );
   }

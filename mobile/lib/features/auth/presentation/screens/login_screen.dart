@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:unify/core/services/api_service.dart';
 import 'package:unify/core/services/storage_service.dart';
@@ -64,21 +65,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (response.statusCode == 200 &&
         data["token"] != null) {
-      
       await StorageService.saveToken(
         data["token"],
       );
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Login successful"),
-        ),
-      );
+      final role = data["user"]["role"];
 
-      debugPrint("Logged in user: ${data["user"]}");
-      debugPrint("JWT saved successfully");
+        context.go(
+          '/home',
+          extra: role,
+      );
     }
   } on DioException catch (e) {
     String message = "Login failed";
@@ -258,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               AuthButton(
                 title: isLoading ? "Signing In..." : "Sign In",
-                onPressed: isLoading ? login : login,
+                onPressed: login,
               ),
 
               const SizedBox(height: 30),

@@ -1,10 +1,11 @@
 import 'package:go_router/go_router.dart';
 
-import '../../features/auth/screens/login_screen.dart';
-import '../../features/auth/screens/register_screen.dart';
-import '../../features/home/screens/home_screen.dart';
-import '../../features/onboarding/screens/onboarding_screen.dart';
-import '../../features/splash/screens/splash_screen.dart';
+import 'package:unify/features/auth/presentation/screens/login_screen.dart';
+import 'package:unify/features/auth/presentation/screens/register_screen.dart';
+import 'package:unify/features/home/screens/home_screen.dart';
+import 'package:unify/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:unify/features/splash/presentation/screens/splash_screen.dart';
+
 import 'route_names.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -32,7 +33,13 @@ final GoRouter appRouter = GoRouter(
 
     GoRoute(
       path: RouteNames.home,
-      builder: (context, state) => const HomeScreen(),
+      builder: (context, state) {
+        final role = state.extra as String? ?? "STUDENT";
+
+        return HomeScreen(
+          role: role,
+        );
+      },
     ),
   ],
 );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'features/splash/presentation/screens/splash_screen.dart';
 
 void main() {
   runApp(const UnifyApp());
@@ -12,11 +12,11 @@ class UnifyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: "Unify",
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const SplashScreen(),
+      routerConfig: appRouter,
     );
   }
 }
