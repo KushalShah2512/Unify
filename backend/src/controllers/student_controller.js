@@ -67,6 +67,14 @@ const getProfile = async (req, res) => {
       where: {
         userId: req.user.userId,
       },
+
+      include: {
+        user: {
+          select: {
+            email: true,
+          },
+        },
+      },
     });
 
     if (!profile) {

@@ -48,5 +48,4 @@ router.delete(
   deleteSkill
 );
 
-
 module.exports = router;
