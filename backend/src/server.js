@@ -80,7 +80,7 @@ app.get("/api/db-test", async (req, res) => {
 // Authentication Routes
 // ====================
 
-app.use("/api/auth", authRoutes);
+// app.use("/api/auth", authRoutes);
 
 
 // ====================

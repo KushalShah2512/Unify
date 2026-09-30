@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://172.16.62.181:5000/api';
+  static const String baseUrl = 'http://10.23.46.7:5000';
 
   late final Dio dio;
 
@@ -19,7 +19,7 @@ class ApiService {
   }
 
   Future<Response> healthCheck() async {
-    return await dio.get('/health');
+    return await dio.get('/api/health');
   }
 
   Future<Response> login({
@@ -27,7 +27,7 @@ class ApiService {
     required String password,
   }) async {
     return await dio.post(
-      '/auth/login',
+      '/api/auth/login',
       data: {
         'email': email,
         'password': password,
