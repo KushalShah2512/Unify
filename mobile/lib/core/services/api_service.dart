@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:unify/core/services/storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.21.71.244:5000';
+  static const String baseUrl = 'http://10.21.71.88:5000';
 
   late final Dio dio;
 
@@ -48,6 +48,73 @@ class ApiService {
         'email': email.trim(),
         'password': password,
       },
+    );
+  }
+
+  Future<Response> getSkills() async {
+    final token = await StorageService.getToken();
+
+    return await dio.get(
+      '/api/students/skills',
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+  }
+
+  Future<Response> addSkill({
+    required String name,
+    required String level,
+  }) async {
+    final token = await StorageService.getToken();
+
+    return await dio.post(
+      '/api/students/skills',
+      data: {
+        'name': name,
+        'level': level,
+      },
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+  }
+
+  Future<Response> updateSkill({
+    required int id,
+    required String name,
+    required String level,
+  }) async {
+    final token = await StorageService.getToken();
+
+    return await dio.put(
+      '/api/students/skills/$id',
+      data: {
+        'name': name,
+        'level': level,
+      },
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+  }
+
+  Future<Response> deleteSkill(int id) async {
+    final token = await StorageService.getToken();
+
+    return await dio.delete(
+      '/api/students/skills/$id',
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ),
     );
   }
 
@@ -99,5 +166,184 @@ class ApiService {
         'availability': availability,
       },
     );
+  }
+
+  Future<Response> getProjects() async {
+    final token = await StorageService.getToken();
+
+    return await dio.get(
+      '/api/students/projects',
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+  }
+
+  Future<Response> addProject({
+    required String title,
+    String? description,
+    String? technologies,
+    String? projectUrl,
+  }) async {
+    final token = await StorageService.getToken();
+
+    return await dio.post(
+      '/api/students/projects',
+      data: {
+        'title': title,
+        'description': description,
+        'technologies': technologies,
+        'projectUrl': projectUrl,
+      },
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+  }
+
+  Future<Response> updateProject({
+    required int id,
+    required String title,
+    String? description,
+    String? technologies,
+    String? projectUrl,
+  }) async {
+    final token = await StorageService.getToken();
+
+    return await dio.put(
+      '/api/students/projects/$id',
+      data: {
+        'title': title,
+        'description': description,
+        'technologies': technologies,
+        'projectUrl': projectUrl,
+      },
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+  }
+
+  Future<Response> deleteProject(int id) async {
+    final token = await StorageService.getToken();
+
+    return await dio.delete(
+      '/api/students/projects/$id',
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+  }
+
+// =====================================================
+// Certifications
+// =====================================================
+
+  Future<Response> getCertifications() async {
+    return await dio.get('/api/certifications');
+  }
+
+  Future<Response> addCertification({
+    required String name,
+    String? issuingOrg,
+    String? issueDate,
+    String? credentialUrl,
+  }) async {
+    return await dio.post(
+      '/api/certifications',
+      data: {
+        'name': name,
+        'issuingOrg': issuingOrg,
+        'issueDate': issueDate,
+        'credentialUrl': credentialUrl,
+      },
+    );
+  }
+
+  Future<Response> updateCertification({
+    required int id,
+    required String name,
+    String? issuingOrg,
+    String? issueDate,
+    String? credentialUrl,
+  }) async {
+    return await dio.put(
+      '/api/certifications/$id',
+      data: {
+        'name': name,
+        'issuingOrg': issuingOrg,
+        'issueDate': issueDate,
+        'credentialUrl': credentialUrl,
+      },
+    );
+  }
+
+  Future<Response> deleteCertification(int id) async {
+    return await dio.delete(
+      '/api/certifications/$id',
+    );
+  }
+
+// =====================================================
+// Education
+// =====================================================
+
+  Future<Response> getEducation() async {
+    return await dio.get('/api/students/education');
+  }
+
+  Future<Response> addEducation({
+    required String institution,
+    required String degree,
+    String? fieldOfStudy,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? description,
+  }) async {
+    return await dio.post(
+      '/api/students/education',
+      data: {
+        'institution': institution,
+        'degree': degree,
+        'fieldOfStudy': fieldOfStudy,
+        'startDate': startDate?.toIso8601String(),
+        'endDate': endDate?.toIso8601String(),
+        'description': description,
+      },
+    );
+  }
+
+  Future<Response> updateEducation({
+    required int id,
+    required String institution,
+    required String degree,
+    String? fieldOfStudy,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? description,
+  }) async {
+    return await dio.put(
+      '/api/students/education/$id',
+      data: {
+        'institution': institution,
+        'degree': degree,
+        'fieldOfStudy': fieldOfStudy,
+        'startDate': startDate?.toIso8601String(),
+        'endDate': endDate?.toIso8601String(),
+        'description': description,
+      },
+    );
+  }
+
+  Future<Response> deleteEducation(int id) async {
+    return await dio.delete('/api/students/education/$id');
   }
 }

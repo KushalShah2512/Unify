@@ -114,34 +114,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
 
-                  _ProfileOption(
+                 _ProfileOption(
                     icon: Icons.work_outline,
-                    title: "My Jobs",
-                    subtitle: "View your applied and saved jobs",
+                    title: "My Projects",
+                    subtitle: "View and manage your projects",
                     onTap: () {
-                      context.push('/jobs');
+                        context.push('/projects');
                     },
-                  ),
+                ),
 
                   _ProfileOption(
                     icon: Icons.school_outlined,
                     title: "Education",
                     subtitle: "Manage your education details",
-                    onTap: () {},
+                    onTap: () {
+                        context.push('/education');
+                    },
                   ),
 
                   _ProfileOption(
                     icon: Icons.code_outlined,
                     title: "Skills",
                     subtitle: "Manage your technical skills",
-                    onTap: () {},
+                    onTap: () {
+                        context.push('/skills');
+                    },
                   ),
 
                   _ProfileOption(
                     icon: Icons.workspace_premium_outlined,
                     title: "Certifications",
                     subtitle: "Manage your certifications",
-                    onTap: () {},
+                    onTap: () {
+                        context.push('/certifications');
+                    },
                   ),
 
                   _ProfileOption(

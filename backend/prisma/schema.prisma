@@ -20,8 +20,8 @@ model User {
 }
 
 model StudentProfile {
-  id           Int      @id @default(autoincrement())
-  userId       Int      @unique
+  id           Int     @id @default(autoincrement())
+  userId       Int     @unique
   fullName     String
   phone        String?
   location     String?
@@ -32,16 +32,17 @@ model StudentProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  skills         Skill[]
-  projects       Project[]
-  certifications Certification[]
+  skills            Skill[]
+  projects          Project[]
+  certifications    Certification[]
+  educationRecords  Education[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Skill {
-  id        Int    @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   name      String
   level     String?
   studentId Int
@@ -52,8 +53,8 @@ model Skill {
   updatedAt DateTime @updatedAt
 }
 
-model Project {qa
-  id           Int      @id @default(autoincrement())
+model Project {
+  id           Int     @id @default(autoincrement())
   title        String
   description  String?
   technologies String?
@@ -67,12 +68,12 @@ model Project {qa
 }
 
 model Certification {
-  id             Int      @id @default(autoincrement())
-  name           String
-  issuingOrg     String?
-  issueDate      DateTime?
-  credentialUrl  String?
-  studentId      Int
+  id            Int       @id @default(autoincrement())
+  name          String
+  issuingOrg    String?
+  issueDate     DateTime?
+  credentialUrl String?
+  studentId     Int
 
   student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
@@ -81,14 +82,14 @@ model Certification {
 }
 
 model EmployerProfile {
-  id              Int      @id @default(autoincrement())
-  userId          Int      @unique
-  companyName     String
-  description     String?
-  industry        String?
-  website         String?
-  location        String?
-  isVerified      Boolean  @default(false)
+  id                 Int                @id @default(autoincrement())
+  userId             Int                @unique
+  companyName        String
+  description        String?
+  industry           String?
+  website            String?
+  location           String?
+  isVerified         Boolean            @default(false)
   verificationStatus VerificationStatus @default(PENDING)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -107,4 +108,20 @@ enum VerificationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+model Education {
+  id           Int      @id @default(autoincrement())
+  institution  String
+  degree       String
+  fieldOfStudy String?
+  startDate    DateTime?
+  endDate      DateTime?
+  description  String?
+  studentId    Int
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

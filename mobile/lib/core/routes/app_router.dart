@@ -6,8 +6,12 @@ import 'package:unify/features/auth/presentation/screens/register_screen.dart';
 import 'package:unify/features/home/screens/home_screen.dart';
 import 'package:unify/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:unify/features/profile/screens/profile_screen.dart';
+import 'package:unify/features/profile/screens/skills_screen.dart';
 import 'package:unify/features/splash/presentation/screens/splash_screen.dart';
 import 'package:unify/features/profile/screens/edit_profile_screen.dart';
+import 'package:unify/features/profile/screens/projects_screen.dart';
+import 'package:unify/features/profile/screens/certifications_screen.dart';
+import 'package:unify/features/profile/screens/education_screen.dart';
 
 import 'route_names.dart';
 
@@ -44,12 +48,32 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.profile,
       builder: (context, state) => const ProfileScreen(),
     ),
+    
+    GoRoute(
+      path: RouteNames.education,
+      builder: (context, state) => const EducationScreen(),
+    ),
+
+    GoRoute(
+      path: RouteNames.skills,
+      builder: (context, state) => const SkillsScreen(),
+    ),
 
     GoRoute(
       path: RouteNames.editProfile,
       builder: (context, state) {
         return const EditProfileScreen();
       },
+    ),
+
+    GoRoute(
+      path: RouteNames.projects,
+      builder: (context, state) => const ProjectsScreen(),
+    ),
+
+    GoRoute(
+      path: RouteNames.certifications,
+      builder: (context, state) => const CertificationsScreen(),
     ),
   ],
 );

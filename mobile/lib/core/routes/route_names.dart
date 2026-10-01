@@ -8,4 +8,8 @@ class RouteNames {
   static const home = '/home';
   static const profile = '/profile';
   static const editProfile = '/edit-profile';
+  static const skills = '/skills';
+  static const projects = '/projects';
+  static const certifications = '/certifications';
+  static const education = '/education';
 }

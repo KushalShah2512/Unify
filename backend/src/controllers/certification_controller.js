@@ -33,11 +33,24 @@ const addCertification = async (req, res) => {
       });
     }
 
+    let parsedIssueDate = null;
+
+    if (issueDate) {
+      parsedIssueDate = new Date(issueDate);
+
+      if (isNaN(parsedIssueDate.getTime())) {
+        return res.status(400).json({
+          message: "Invalid issue date",
+          status: "error",
+        });
+      }
+    }
+
     const certification = await prisma.certification.create({
       data: {
         name,
         issuingOrg,
-        issueDate: issueDate ? new Date(issueDate) : null,
+        issueDate: parsedIssueDate,
         credentialUrl,
         studentId: studentProfile.id,
       },
@@ -83,7 +96,7 @@ const getCertifications = async (req, res) => {
         studentId: studentProfile.id,
       },
       orderBy: {
-        issueDate: "desc",
+        createdAt: "desc",
       },
     });
 
@@ -125,6 +138,13 @@ const updateCertification = async (req, res) => {
       });
     }
 
+    if (!name) {
+      return res.status(400).json({
+        message: "Certification name is required",
+        status: "error",
+      });
+    }
+
     const studentProfile = await prisma.studentProfile.findUnique({
       where: {
         userId: req.user.userId,
@@ -139,18 +159,31 @@ const updateCertification = async (req, res) => {
     }
 
     const existingCertification =
-      await prisma.certification.findFirst({
-        where: {
-          id: certificationId,
-          studentId: studentProfile.id,
-        },
-      });
+        await prisma.certification.findFirst({
+      where: {
+        id: certificationId,
+        studentId: studentProfile.id,
+      },
+    });
 
     if (!existingCertification) {
       return res.status(404).json({
         message: "Certification not found",
         status: "error",
       });
+    }
+
+    let parsedIssueDate = null;
+
+    if (issueDate) {
+      parsedIssueDate = new Date(issueDate);
+
+      if (isNaN(parsedIssueDate.getTime())) {
+        return res.status(400).json({
+          message: "Invalid issue date",
+          status: "error",
+        });
+      }
     }
 
     const certification = await prisma.certification.update({
@@ -160,7 +193,7 @@ const updateCertification = async (req, res) => {
       data: {
         name,
         issuingOrg,
-        issueDate: issueDate ? new Date(issueDate) : null,
+        issueDate: parsedIssueDate,
         credentialUrl,
       },
     });
@@ -210,12 +243,12 @@ const deleteCertification = async (req, res) => {
     }
 
     const existingCertification =
-      await prisma.certification.findFirst({
-        where: {
-          id: certificationId,
-          studentId: studentProfile.id,
-        },
-      });
+        await prisma.certification.findFirst({
+      where: {
+        id: certificationId,
+        studentId: studentProfile.id,
+      },
+    });
 
     if (!existingCertification) {
       return res.status(404).json({

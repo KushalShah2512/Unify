@@ -7,8 +7,13 @@ const {
   deleteCertification,
 } = require("../controllers/certification_controller");
 
-const { authenticateToken } = require("../middleware/auth_middleware");
-const { authorizeRoles } = require("../middleware/role_middleware");
+const {
+  authenticateToken,
+} = require("../middleware/auth_middleware");
+
+const {
+  authorizeRoles,
+} = require("../middleware/role_middleware");
 
 const router = express.Router();
 
@@ -47,6 +52,5 @@ router.delete(
   authorizeRoles("STUDENT"),
   deleteCertification
 );
-
 
 module.exports = router;
