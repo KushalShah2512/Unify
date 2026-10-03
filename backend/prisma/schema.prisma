@@ -125,3 +125,23 @@ model Education {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Opportunity {
+  id              Int      @id @default(autoincrement())
+  title           String
+  description     String?
+  type            String
+  companyName     String
+  location        String?
+  workMode        String?
+  stipend         String?
+  salary          String?
+  applicationUrl  String?
+  requiredSkills  String[]
+  preferredSkills String?
+  experience      String?
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

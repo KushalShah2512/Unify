@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:unify/core/services/storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.21.71.88:5000';
+  static const String baseUrl = 'http://10.21.71.18:5000';
 
   late final Dio dio;
 
@@ -247,50 +247,50 @@ class ApiService {
 // Certifications
 // =====================================================
 
-  Future<Response> getCertifications() async {
-    return await dio.get('/api/certifications');
-  }
+Future<Response> getCertifications() async {
+  return await dio.get('/api/students/certifications');
+}
 
-  Future<Response> addCertification({
-    required String name,
-    String? issuingOrg,
-    String? issueDate,
-    String? credentialUrl,
-  }) async {
-    return await dio.post(
-      '/api/certifications',
-      data: {
-        'name': name,
-        'issuingOrg': issuingOrg,
-        'issueDate': issueDate,
-        'credentialUrl': credentialUrl,
-      },
-    );
-  }
+Future<Response> addCertification({
+  required String name,
+  String? issuingOrg,
+  String? issueDate,
+  String? credentialUrl,
+}) async {
+  return await dio.post(
+    '/api/students/certifications',
+    data: {
+      'name': name,
+      'issuingOrg': issuingOrg,
+      'issueDate': issueDate,
+      'credentialUrl': credentialUrl,
+    },
+  );
+}
 
-  Future<Response> updateCertification({
-    required int id,
-    required String name,
-    String? issuingOrg,
-    String? issueDate,
-    String? credentialUrl,
-  }) async {
-    return await dio.put(
-      '/api/certifications/$id',
-      data: {
-        'name': name,
-        'issuingOrg': issuingOrg,
-        'issueDate': issueDate,
-        'credentialUrl': credentialUrl,
-      },
-    );
-  }
+Future<Response> updateCertification({
+  required int id,
+  required String name,
+  String? issuingOrg,
+  String? issueDate,
+  String? credentialUrl,
+}) async {
+  return await dio.put(
+    '/api/students/certifications/$id',
+    data: {
+      'name': name,
+      'issuingOrg': issuingOrg,
+      'issueDate': issueDate,
+      'credentialUrl': credentialUrl,
+    },
+  );
+}
 
-  Future<Response> deleteCertification(int id) async {
-    return await dio.delete(
-      '/api/certifications/$id',
-    );
-  }
+Future<Response> deleteCertification(int id) async {
+  return await dio.delete(
+    '/api/students/certifications/$id',
+  );
+}
 
 // =====================================================
 // Education
@@ -345,5 +345,34 @@ class ApiService {
 
   Future<Response> deleteEducation(int id) async {
     return await dio.delete('/api/students/education/$id');
+  }
+
+// =====================================================
+// Career Passport
+// =====================================================
+
+  Future<Response> getCareerPassport() async {
+    return await dio.get('/api/students/career-passport');
+  }
+
+  // =====================================================
+// AI Opportunity Readiness
+// =====================================================
+
+  Future<Response> analyzeOpportunityReadiness({
+    required String title,
+    String? company,
+    required List<String> requiredSkills,
+  }) async {
+    return await dio.post(
+      '/api/ai/opportunity-readiness',
+      data: {
+        'opportunity': {
+          'title': title,
+          'company': company,
+          'requiredSkills': requiredSkills,
+        },
+      },
+    );
   }
 }

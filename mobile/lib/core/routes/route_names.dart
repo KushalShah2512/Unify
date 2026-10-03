@@ -12,4 +12,7 @@ class RouteNames {
   static const projects = '/projects';
   static const certifications = '/certifications';
   static const education = '/education';
+  static const careerPassport = '/career-passport';
+  static const aiTest = '/ai-test';
+  static const opportunityReadiness = '/opportunity-readiness';
 }

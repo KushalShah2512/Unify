@@ -21,6 +21,7 @@ const employerRoutes = require("./routes/employer_routes");
 
 const educationRoutes = require("./routes/education_routes");
 
+const aiRoutes = require("./routes/ai_routes");
 const app = express();
 
 app.use(cors());
@@ -33,6 +34,8 @@ app.use("/api/students/projects", projectRoutes);
 app.use("/api/students/certifications", certificationRoutes);
 app.use("/api/students/education", educationRoutes);
 app.use("/api/students/career-passport", careerPassportRoutes);
+
+app.use("/api/ai", aiRoutes);
 
 app.use("/api/employers", employerRoutes);
 // ====================
