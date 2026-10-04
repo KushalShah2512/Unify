@@ -1,14 +1,9 @@
 const prisma = require("../config/database");
 
-// ====================
-// AI Opportunity Readiness & Skill Gap Analysis
-// ====================
-
 const analyzeOpportunityReadiness = async (req, res) => {
   try {
     const { opportunity } = req.body;
 
-    // Validate opportunity data
     if (!opportunity) {
       return res.status(400).json({
         message: "Opportunity data is required",
@@ -17,9 +12,7 @@ const analyzeOpportunityReadiness = async (req, res) => {
     }
 
     const studentProfile = await prisma.studentProfile.findUnique({
-      where: {
-        userId: req.user.userId,
-      },
+      where: { userId: req.user.userId },
       include: {
         skills: true,
         projects: true,
@@ -34,12 +27,18 @@ const analyzeOpportunityReadiness = async (req, res) => {
       });
     }
 
+    // -----------------------------------------
     // Student skills
+    // -----------------------------------------
+
     const studentSkills = studentProfile.skills.map((skill) =>
       skill.name.toLowerCase().trim()
     );
 
-    // Opportunity required skills
+    // -----------------------------------------
+    // Required skills
+    // -----------------------------------------
+
     const requiredSkills = Array.isArray(opportunity.requiredSkills)
       ? opportunity.requiredSkills
       : [];
@@ -48,17 +47,22 @@ const analyzeOpportunityReadiness = async (req, res) => {
       skill.toLowerCase().trim()
     );
 
-    // Find matching skills
+    // -----------------------------------------
+    // Skill matching
+    // -----------------------------------------
+
     const matchingSkills = normalizedRequiredSkills.filter((skill) =>
       studentSkills.includes(skill)
     );
 
-    // Find missing skills
     const missingSkills = normalizedRequiredSkills.filter(
       (skill) => !studentSkills.includes(skill)
     );
 
-    // Calculate basic readiness percentage
+    // -----------------------------------------
+    // Readiness percentage
+    // -----------------------------------------
+
     const readinessPercentage =
       normalizedRequiredSkills.length > 0
         ? Math.round(
@@ -67,6 +71,128 @@ const analyzeOpportunityReadiness = async (req, res) => {
               100
           )
         : 0;
+
+    // -----------------------------------------
+    // Recommendation level
+    // -----------------------------------------
+
+    let recommendation;
+
+    if (readinessPercentage >= 80) {
+      recommendation = "Strong skill match";
+    } else if (readinessPercentage >= 50) {
+      recommendation = "Moderate skill match";
+    } else {
+      recommendation = "Skill development recommended";
+    }
+
+    // -----------------------------------------
+    // Personalized skill-gap actions
+    // -----------------------------------------
+
+    const recommendedActions = [];
+
+    missingSkills.forEach((skill) => {
+      switch (skill) {
+        case "react":
+          recommendedActions.push(
+            "Learn React fundamentals and build a small React project."
+          );
+          break;
+
+        case "javascript":
+          recommendedActions.push(
+            "Strengthen modern JavaScript fundamentals such as ES6+, promises, and async programming."
+          );
+          break;
+
+        case "html":
+          recommendedActions.push(
+            "Revise semantic HTML and build responsive web pages."
+          );
+          break;
+
+        case "css":
+          recommendedActions.push(
+            "Practice responsive CSS, Flexbox, Grid, and modern layouts."
+          );
+          break;
+
+        case "git":
+          recommendedActions.push(
+            "Practice Git and GitHub workflows such as branching, commits, pull requests, and merging."
+          );
+          break;
+
+        case "flutter":
+          recommendedActions.push(
+            "Build a Flutter application using widgets, navigation, state management, and API integration."
+          );
+          break;
+
+        case "dart":
+          recommendedActions.push(
+            "Strengthen Dart fundamentals including classes, collections, null safety, and asynchronous programming."
+          );
+          break;
+
+        case "firebase":
+          recommendedActions.push(
+            "Learn Firebase authentication, Firestore, and basic cloud integration."
+          );
+          break;
+
+        case "node.js":
+          recommendedActions.push(
+            "Build REST APIs using Node.js and Express.js."
+          );
+          break;
+
+        case "express.js":
+          recommendedActions.push(
+            "Practice building REST APIs, middleware, authentication, and error handling with Express.js."
+          );
+          break;
+
+        case "mongodb":
+          recommendedActions.push(
+            "Practice MongoDB CRUD operations, schema design, and database queries."
+          );
+          break;
+
+        case "rest api":
+          recommendedActions.push(
+            "Practice designing and consuming REST APIs using HTTP methods, JSON, and authentication."
+          );
+          break;
+
+        default:
+          recommendedActions.push(
+            `Develop practical skills in ${skill} through a small project or hands-on practice.`
+          );
+      }
+    });
+
+    // Limit recommendations to avoid an unnecessarily long response.
+    const limitedRecommendedActions =
+      recommendedActions.slice(0, 5);
+
+    // -----------------------------------------
+    // Why this matters
+    // -----------------------------------------
+
+    let readinessMessage;
+
+    if (missingSkills.length === 0) {
+      readinessMessage =
+        "Your current skills cover all the required skills listed for this opportunity.";
+    } else if (readinessPercentage >= 50) {
+      readinessMessage =
+        `You already match ${matchingSkills.length} of ${normalizedRequiredSkills.length} required skills. Improving the remaining skills can strengthen your application.`;
+    } else {
+      readinessMessage =
+        `You currently match ${matchingSkills.length} of ${normalizedRequiredSkills.length} required skills. Building the missing skills will improve your readiness for this opportunity.`;
+    }
 
     return res.status(200).json({
       message: "Opportunity readiness analysis completed",
@@ -84,17 +210,15 @@ const analyzeOpportunityReadiness = async (req, res) => {
         },
 
         matchingSkills,
-
         missingSkills,
 
         readinessPercentage,
 
-        recommendation:
-          readinessPercentage >= 80
-            ? "Strong skill match"
-            : readinessPercentage >= 50
-              ? "Moderate skill match"
-              : "Skill development recommended",
+        recommendation,
+
+        readinessMessage,
+
+        recommendedActions: limitedRecommendedActions,
       },
     });
   } catch (error) {

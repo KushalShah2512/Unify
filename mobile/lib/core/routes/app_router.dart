@@ -16,6 +16,7 @@ import 'package:unify/features/profile/screens/career_passport_screen.dart';
 import 'package:unify/features/ai/screens/ai_test_screen.dart';
 import 'package:unify/features/ai/screens/opportunity_readiness_screen.dart';
 import 'package:unify/features/opportunities/screens/opportunities_screen.dart';
+import 'package:unify/features/opportunities/screens/opportunity_details_screen.dart';
 
 import 'route_names.dart';
 
@@ -92,12 +93,31 @@ final GoRouter appRouter = GoRouter(
 
     GoRoute(
       path: RouteNames.opportunityReadiness,
-      builder: (context, state) => const OpportunityReadinessScreen(),
+      builder: (context, state) {
+        final opportunity =
+            state.extra as Map<String, dynamic>;
+
+        return OpportunityReadinessScreen(
+          opportunity: opportunity,
+        );
+      },
     ),
 
     GoRoute(
       path: RouteNames.opportunities,
       builder: (context, state) => const OpportunitiesScreen(),
+    ),
+
+    GoRoute(
+      path: RouteNames.opportunityDetails,
+      builder: (context, state) {
+        final opportunity =
+            state.extra as Map<String, dynamic>;
+
+        return OpportunityDetailsScreen(
+          opportunity: opportunity,
+        );
+      },
     ),
   ],
 );

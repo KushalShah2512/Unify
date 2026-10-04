@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:unify/core/services/storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.21.71.18:5000';
+  static const String baseUrl = 'http://10.193.125.44:5000';
 
   late final Dio dio;
 

@@ -16,4 +16,5 @@ class RouteNames {
   static const aiTest = '/ai-test';
   static const opportunityReadiness = '/opportunity-readiness';
   static const opportunities = '/opportunities';
+  static const opportunityDetails = '/opportunity-details';
 }

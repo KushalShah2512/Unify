@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:unify/core/services/api_service.dart';
 
 class OpportunityReadinessScreen extends StatefulWidget {
-  const OpportunityReadinessScreen({super.key});
+  final Map<String, dynamic> opportunity;
+
+  const OpportunityReadinessScreen({
+    super.key,
+    required this.opportunity,
+  });
 
   @override
   State<OpportunityReadinessScreen> createState() =>
@@ -11,60 +16,49 @@ class OpportunityReadinessScreen extends StatefulWidget {
 
 class _OpportunityReadinessScreenState
     extends State<OpportunityReadinessScreen> {
-  final ApiService apiService = ApiService();
+  final ApiService _apiService = ApiService();
 
-  bool isLoading = true;
-  String? errorMessage;
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  Map<String, dynamic>? analysis;
+  Map<String, dynamic>? _analysis;
 
   @override
   void initState() {
     super.initState();
-    _analyzeOpportunity();
+    _analyzeReadiness();
   }
 
-  Future<void> _analyzeOpportunity() async {
-    try {
-      setState(() {
-        isLoading = true;
-        errorMessage = null;
-      });
+  Future<void> _analyzeReadiness() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-      final response =
-          await apiService.analyzeOpportunityReadiness(
-        title: 'Flutter Developer Intern',
-        company: 'ABC Technologies',
-        requiredSkills: [
-          'Flutter',
-          'Dart',
-          'Firebase',
-          'Git',
-        ],
+    try {
+      final requiredSkills = List<String>.from(
+        widget.opportunity['requiredSkills'] ?? [],
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
+      final response =
+          await _apiService.analyzeOpportunityReadiness(
+        title: widget.opportunity['title'] ?? 'Opportunity',
+        company: widget.opportunity['companyName'],
+        requiredSkills: requiredSkills,
+      );
 
-        setState(() {
-          analysis = Map<String, dynamic>.from(
-            data['analysis'] ?? {},
-          );
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          errorMessage =
-              response.data?['message'] ??
-              'Failed to analyze opportunity';
-          isLoading = false;
-        });
-      }
+      setState(() {
+        _analysis = Map<String, dynamic>.from(
+          response.data['analysis'] ?? {},
+        );
+
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
-        errorMessage =
-            'Unable to analyze this opportunity. Please try again.';
-        isLoading = false;
+        _isLoading = false;
+        _errorMessage =
+            'Unable to analyze your opportunity readiness.';
       });
     }
   }
@@ -73,164 +67,206 @@ class _OpportunityReadinessScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Opportunity Readiness'),
+        title: const Text('AI Opportunity Readiness'),
       ),
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
-    if (isLoading) {
+    if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 20),
+            Text(
+              'Analyzing your profile...',
+              style: TextStyle(
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    if (errorMessage != null) {
-      return _buildErrorState();
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 52,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _analyzeReadiness,
+                child: const Text('Try Again'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
-    if (analysis == null) {
+    if (_analysis == null) {
       return const Center(
         child: Text('No analysis available'),
       );
     }
 
-    final student =
-        Map<String, dynamic>.from(
-      analysis!['student'] ?? {},
+    final readiness =
+        (_analysis!['readinessPercentage'] ?? 0) as num;
+
+    final matchingSkills = List<String>.from(
+      _analysis!['matchingSkills'] ?? [],
     );
 
-    final opportunity =
-        Map<String, dynamic>.from(
-      analysis!['opportunity'] ?? {},
+    final missingSkills = List<String>.from(
+      _analysis!['missingSkills'] ?? [],
     );
-
-    final matchingSkills =
-        List<dynamic>.from(
-      analysis!['matchingSkills'] ?? [],
-    );
-
-    final missingSkills =
-        List<dynamic>.from(
-      analysis!['missingSkills'] ?? [],
-    );
-
-    final readinessPercentage =
-        (analysis!['readinessPercentage'] ?? 0) as num;
 
     final recommendation =
-        analysis!['recommendation']?.toString() ??
-        'No recommendation available';
+        _analysis!['recommendation'] ??
+            'No recommendation available';
+
+    final readinessMessage =
+        _analysis!['readinessMessage'] ??
+            'No additional readiness information available.';
+
+    final recommendedActions = List<String>.from(
+      _analysis!['recommendedActions'] ?? [],
+    );
+
+    final student = Map<String, dynamic>.from(
+      _analysis!['student'] ?? {},
+    );
+
+    final opportunity = Map<String, dynamic>.from(
+      _analysis!['opportunity'] ?? {},
+    );
 
     return RefreshIndicator(
-      onRefresh: _analyzeOpportunity,
+      onRefresh: _analyzeReadiness,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         children: [
-          _buildOpportunityCard(opportunity),
-          const SizedBox(height: 16),
+          _buildOpportunityHeader(
+            opportunity,
+          ),
+
+          const SizedBox(height: 24),
 
           _buildReadinessCard(
-            readinessPercentage.toDouble(),
+            readiness.toDouble(),
           ),
-          const SizedBox(height: 16),
 
-          _buildSkillsCard(
+          const SizedBox(height: 24),
+
+          _buildSkillsSection(
             title: 'Matching Skills',
-            icon: Icons.check_circle_outline,
             skills: matchingSkills,
-            emptyMessage: 'No matching skills found.',
+            icon: Icons.check_circle_outline,
           ),
-          const SizedBox(height: 16),
 
-          _buildSkillsCard(
+          const SizedBox(height: 20),
+
+          _buildSkillsSection(
             title: 'Skill Gaps',
-            icon: Icons.school_outlined,
             skills: missingSkills,
-            emptyMessage: 'No skill gaps identified.',
+            icon: Icons.warning_amber_rounded,
           ),
-          const SizedBox(height: 16),
 
-          _buildRecommendationCard(recommendation),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
-          _buildStudentInfoCard(student),
+          _buildRecommendationCard(
+            recommendation.toString(),
+          ),
+
+          const SizedBox(height: 20),
+
+          _buildReadinessMessageCard(
+            readinessMessage.toString(),
+          ),
+
+          const SizedBox(height: 20),
+
+          _buildRecommendedActionsCard(
+            recommendedActions,
+          ),
+
+          const SizedBox(height: 24),
+
+          _buildProfileCard(
+            student,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildOpportunityCard(
+  Widget _buildOpportunityHeader(
     Map<String, dynamic> opportunity,
   ) {
-    final title =
-        opportunity['title']?.toString() ??
-        'Opportunity';
-
-    final company =
-        opportunity['company']?.toString();
-
     return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(18),
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius:
-                        BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.work_outline,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight:
-                              FontWeight.bold,
-                        ),
-                      ),
-                      if (company != null &&
-                          company.isNotEmpty)
-                        Padding(
-                          padding:
-                              const EdgeInsets.only(
-                            top: 4,
-                          ),
-                          child: Text(
-                            company,
-                            style:
-                                const TextStyle(
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer,
+              ),
+              child: const Icon(
+                Icons.work_outline,
+                size: 28,
+              ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'AI-powered analysis of your profile against this opportunity.',
-              style: TextStyle(
-                fontSize: 14,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    opportunity['title'] ??
+                        'Opportunity',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    opportunity['company'] ??
+                        'Company',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium,
+                  ),
+                ],
               ),
             ),
           ],
@@ -240,56 +276,67 @@ class _OpportunityReadinessScreenState
   }
 
   Widget _buildReadinessCard(
-    double percentage,
+    double readiness,
   ) {
-    final score =
-        percentage.clamp(0, 100).round();
-
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const Text(
-              'Opportunity Readiness',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            Text(
+              'Your Opportunity Readiness',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 24),
+
             SizedBox(
-              width: 150,
-              height: 150,
+              width: 170,
+              height: 170,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    width: 150,
-                    height: 150,
-                    child:
-                        CircularProgressIndicator(
-                      value: score / 100,
-                      strokeWidth: 12,
+                    width: 170,
+                    height: 170,
+                    child: CircularProgressIndicator(
+                      value: readiness / 100,
+                      strokeWidth: 14,
+                      backgroundColor:
+                          Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                     ),
                   ),
+
                   Column(
-                    mainAxisSize:
-                        MainAxisSize.min,
+                    mainAxisAlignment:
+                        MainAxisAlignment.center,
                     children: [
                       Text(
-                        '$score%',
-                        style:
-                            const TextStyle(
-                          fontSize: 32,
-                          fontWeight:
-                              FontWeight.bold,
-                        ),
+                        '${readiness.round()}%',
+                        style: Theme.of(context)
+                            .textTheme
+                            .displaySmall
+                            ?.copyWith(
+                              fontWeight:
+                                  FontWeight.w700,
+                            ),
                       ),
                       const Text(
                         'Ready',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontWeight:
+                              FontWeight.w500,
                         ),
                       ),
                     ],
@@ -297,13 +344,15 @@ class _OpportunityReadinessScreenState
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
+
             Text(
-              _getReadinessMessage(score),
+              _readinessMessage(readiness),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-              ),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge,
             ),
           ],
         ),
@@ -311,65 +360,98 @@ class _OpportunityReadinessScreenState
     );
   }
 
-  String _getReadinessMessage(int score) {
-    if (score >= 80) {
-      return 'Your profile matches most of the required skills.';
+  String _readinessMessage(double readiness) {
+    if (readiness >= 80) {
+      return 'You have a strong skill match for this opportunity.';
     }
 
-    if (score >= 50) {
-      return 'You have a partial skill match. Focus on the identified skill gaps.';
+    if (readiness >= 50) {
+      return 'You have a moderate skill match. Consider improving the missing skills.';
     }
 
-    return 'Develop the missing skills to improve your readiness for this opportunity.';
+    return 'Focus on developing the missing skills before applying.';
   }
 
-  Widget _buildSkillsCard({
+  Widget _buildSkillsSection({
     required String title,
+    required List<String> skills,
     required IconData icon,
-    required List<dynamic> skills,
-    required String emptyMessage,
   }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon),
-                const SizedBox(width: 10),
-                Text(
-                  title,
+    if (skills.isEmpty) {
+      return Card(
+        elevation: 0,
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Icon(icon),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '$title: None',
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (skills.isEmpty)
-              Text(emptyMessage)
-            else
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: skills.map((skill) {
-                  return Chip(
-                    label: Text(
-                      _capitalize(
-                        skill.toString(),
-                      ),
-                    ),
-                  );
-                }).toList(),
               ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
           ],
         ),
-      ),
+
+        const SizedBox(height: 12),
+
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: skills
+              .map(
+                (skill) => Container(
+                  padding:
+                      const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        BorderRadius.circular(20),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest,
+                  ),
+                  child: Text(skill),
+                ),
+              )
+              .toList(),
+        ),
+      ],
     );
   }
 
@@ -377,31 +459,47 @@ class _OpportunityReadinessScreenState
     String recommendation,
   ) {
     return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+        padding: const EdgeInsets.all(18),
+        child: Row(
           crossAxisAlignment:
               CrossAxisAlignment.start,
           children: [
-            const Row(
-              children: [
-                Icon(Icons.lightbulb_outline),
-                SizedBox(width: 10),
-                Text(
-                  'Recommendation',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
-              ],
+            Icon(
+              Icons.lightbulb_outline,
+              size: 28,
+              color: Theme.of(context)
+                  .colorScheme
+                  .primary,
             ),
-            const SizedBox(height: 14),
-            Text(
-              recommendation,
-              style: const TextStyle(
-                fontSize: 15,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI Recommendation',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(
+                          fontWeight:
+                              FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    recommendation,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium,
+                  ),
+                ],
               ),
             ),
           ],
@@ -410,94 +508,234 @@ class _OpportunityReadinessScreenState
     );
   }
 
-  Widget _buildStudentInfoCard(
-    Map<String, dynamic> student,
+  Widget _buildReadinessMessageCard(
+    String message,
   ) {
-    final name =
-        student['name']?.toString() ??
-        'Student';
-
-    final careerGoal =
-        student['careerGoal']?.toString();
-
     return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+        padding: const EdgeInsets.all(18),
+        child: Row(
           crossAxisAlignment:
               CrossAxisAlignment.start,
           children: [
-            const Row(
-              children: [
-                Icon(Icons.person_outline),
-                SizedBox(width: 10),
-                Text(
-                  'Profile Used',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
-              ],
+            Icon(
+              Icons.info_outline,
+              size: 28,
+              color: Theme.of(context)
+                  .colorScheme
+                  .primary,
             ),
-            const SizedBox(height: 14),
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight:
-                    FontWeight.w600,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Why This Matters',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(
+                          fontWeight:
+                              FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(
+                          height: 1.4,
+                        ),
+                  ),
+                ],
               ),
             ),
-            if (careerGoal != null &&
-                careerGoal.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                'Career Goal: $careerGoal',
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecommendedActionsCard(
+    List<String> actions,
+  ) {
+    if (actions.isEmpty) {
+      return Card(
+        elevation: 0,
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(18),
+          child: Row(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.check_circle_outline),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'No specific actions are required. Your current skills cover the opportunity requirements.',
+                ),
               ),
             ],
-          ],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 52,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              errorMessage ??
-                  'Something went wrong.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _analyzeOpportunity,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _capitalize(String value) {
-    if (value.isEmpty) {
-      return value;
+      );
     }
 
-    return value[0].toUpperCase() +
-        value.substring(1);
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Recommended Actions',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(
+                          fontWeight:
+                              FontWeight.w700,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            ...List.generate(
+              actions.length,
+              (index) {
+                return Padding(
+                  padding:
+                      const EdgeInsets.only(
+                    bottom: 14,
+                  ),
+                  child: Row(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        alignment:
+                            Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primaryContainer,
+                        ),
+                        child: Text(
+                          '${index + 1}',
+                          style:
+                              const TextStyle(
+                            fontWeight:
+                                FontWeight.w700,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: Text(
+                          actions[index],
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                height: 1.4,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileCard(
+    Map<String, dynamic> student,
+  ) {
+    return Card(
+      elevation: 0,
+      color: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.person_outline,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Profile Used',
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    student['name'] ?? 'Student',
+                  ),
+                  if (student['careerGoal'] !=
+                      null)
+                    Text(
+                      student['careerGoal']
+                          .toString(),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
