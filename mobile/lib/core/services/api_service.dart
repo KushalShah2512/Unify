@@ -375,4 +375,12 @@ Future<Response> deleteCertification(int id) async {
       },
     );
   }
+
+  // =====================================================
+  // Opportunities
+  // =====================================================
+
+  Future<Response> getOpportunities() async {
+    return await dio.get('/api/opportunities');
+  }
 }

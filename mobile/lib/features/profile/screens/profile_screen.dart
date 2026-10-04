@@ -155,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title: "Career Passport",
                     subtitle: "View your career profile",
                     onTap: () {
-                      context.push('/opportunity-readiness');
+                      context.push('/opportunities');
                     },
                   ),
 

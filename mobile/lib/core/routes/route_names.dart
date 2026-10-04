@@ -15,4 +15,5 @@ class RouteNames {
   static const careerPassport = '/career-passport';
   static const aiTest = '/ai-test';
   static const opportunityReadiness = '/opportunity-readiness';
+  static const opportunities = '/opportunities';
 }
