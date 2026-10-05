@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "729101956164",
+    "project_id": "unify-ba2dc",
+    "storage_bucket": "unify-ba2dc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:729101956164:android:5e3bf54f4e00423d397811",
+        "android_client_info": {
+          "package_name": "com.example.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "729101956164-hfmdga5ruti8i8b78cqs2pv3dks8c8i1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mobile",
+            "certificate_hash": "aaa5c69c2ac0d86c065ce4322ef7f5d23c23e7fd"
+          }
+        },
+        {
+          "client_id": "729101956164-rm9npvconf2bulul56b0239v4jqgoq36.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhK1hXWJOD7NbI1NabmU8xoUuTZ27Ig7k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "729101956164-rm9npvconf2bulul56b0239v4jqgoq36.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

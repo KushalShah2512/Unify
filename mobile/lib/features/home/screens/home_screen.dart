@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:unify/core/services/storage_service.dart';
+
 import '../../../../core/routes/route_names.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -33,6 +35,24 @@ class HomeScreen extends StatelessWidget {
               size: 30,
             ),
           ),
+
+          const SizedBox(width: 4),
+
+          IconButton(
+            onPressed: () async {
+              await StorageService.clearToken();
+
+              if (!context.mounted) return;
+
+              context.go(RouteNames.login);
+            },
+            icon: const Icon(
+              Icons.logout_outlined,
+              color: Colors.black87,
+              size: 27,
+            ),
+          ),
+
           const SizedBox(width: 8),
         ],
       ),

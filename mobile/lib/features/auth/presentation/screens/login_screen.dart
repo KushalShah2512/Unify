@@ -9,6 +9,9 @@ import '../widgets/auth_button.dart';
 import '../widgets/auth_textfield.dart';
 import '../widgets/social_login_button.dart';
 
+import 'package:unify/core/services/google_auth_service.dart';
+
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -28,6 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final ApiService apiService = ApiService();
 
+  final GoogleAuthService googleAuthService = GoogleAuthService();
+
   bool isLoading = false;
 
   @override
@@ -37,78 +42,124 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> login() async {
-  final email = emailController.text.trim();
-  final password = passwordController.text;
+  Future<void> signInWithGoogle() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
 
-  if (email.isEmpty || password.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Please enter email and password"),
-      ),
-    );
-
-    return;
-  }
-
-  setState(() {
-    isLoading = true;
-  });
-
-  try {
-    final response = await apiService.login(
-      email: email,
-      password: password,
-    );
-
-    final data = response.data;
-
-    if (response.statusCode == 200 &&
-        data["token"] != null) {
-      await StorageService.saveToken(
-        data["token"],
-      );
+      final response = await googleAuthService.signIn();
 
       if (!mounted) return;
 
-      final role = data["user"]["role"];
+      final data = response.data;
 
-        context.go(
-          '/home',
-          extra: role,
+      if (data["token"] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Google login successful: ${data["user"]["email"]}',
+            ),
+          ),
+        );
+
+        context.go('/home');
+      } else {
+        throw Exception(
+          'Authentication token was not returned by the server',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Google Sign-In failed: $e',
+          ),
+        ),
       );
-    }
-  } on DioException catch (e) {
-    String message = "Login failed";
-
-    if (e.response?.data != null) {
-      message =
-          e.response?.data["message"] ?? "Login failed";
-    }
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
-  } catch (e) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Something went wrong"),
-      ),
-    );
-  } finally {
-    if (mounted) {
-      setState(() {
-        isLoading = false;
-      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
-}
+
+  Future<void> login() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter email and password"),
+        ),
+      );
+
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final response = await apiService.login(
+        email: email,
+        password: password,
+      );
+
+      final data = response.data;
+
+      if (response.statusCode == 200 &&
+          data["token"] != null) {
+        await StorageService.saveToken(
+          data["token"],
+        );
+
+        if (!mounted) return;
+
+        final role = data["user"]["role"];
+
+          context.go(
+            '/home',
+            extra: role,
+        );
+      }
+    } on DioException catch (e) {
+      String message = "Login failed";
+
+      if (e.response?.data != null) {
+        message =
+            e.response?.data["message"] ?? "Login failed";
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Something went wrong"),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -296,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 title: "Continue with Google",
 
-                onPressed: () {},
+                onPressed: signInWithGoogle,
 
               ),
 
@@ -315,7 +366,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextButton(
 
                     onPressed: () {
-
+                      context.go('/register');
                     },
 
                     child: const Text(

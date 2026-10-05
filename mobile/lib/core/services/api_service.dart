@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:unify/core/services/storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.193.125.44:5000';
+  static const String baseUrl = 'http://10.23.46.7:5000';
 
   late final Dio dio;
 
@@ -51,6 +51,32 @@ class ApiService {
     );
   }
 
+  Future<Response> register({
+    required String email,
+    required String password,
+    required String role,
+  }) async {
+    return dio.post(
+      '/api/auth/register',
+      data: {
+        'email': email.trim(),
+        'password': password,
+        'role': role,
+      },
+    );
+  }
+
+  Future<Response> googleLogin({
+    required String idToken,
+  }) async {
+    return dio.post(
+      '/api/auth/google',
+      data: {
+        'idToken': idToken,
+      },
+    );
+  }
+  
   Future<Response> getSkills() async {
     final token = await StorageService.getToken();
 

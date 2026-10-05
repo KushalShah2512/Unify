@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/storage_service.dart';
-// import '../../../onboarding/presentation/screens/onboarding_screen.dart';
 import '../widgets/animated_logo.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -49,16 +48,27 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(
       AppConstants.splashDuration,
       () async {
-        final completed =
+        final onboardingCompleted =
             await StorageService.isOnboardingCompleted();
+
+        final token = await StorageService.getToken();
 
         if (!mounted) return;
 
-        if (completed) {
-          context.go('/login');
-        } else {
+        // First-time user
+        if (!onboardingCompleted) {
           context.go('/onboarding');
+          return;
         }
+
+        // Returning user with saved login session
+        if (token != null && token.isNotEmpty) {
+          context.go('/home');
+          return;
+        }
+
+        // Returning user without a login session
+        context.go('/login');
       },
     );
   }
