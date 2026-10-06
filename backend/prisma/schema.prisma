@@ -12,6 +12,8 @@ model User {
   email     String   @unique
   password  String?
   googleId  String?  @unique
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
   role      UserRole @default(STUDENT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

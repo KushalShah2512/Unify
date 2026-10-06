@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:unify/core/services/api_service.dart';
+import 'package:unify/core/services/google_auth_service.dart';
 
 import '../widgets/auth_button.dart';
 import '../widgets/auth_textfield.dart';
@@ -21,6 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final confirmPasswordController = TextEditingController();
 
   final ApiService apiService = ApiService();
+  final GoogleAuthService googleAuthService = GoogleAuthService();
 
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
@@ -139,6 +141,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Future<void> registerWithGoogle() async {
+    if (isLoading) return;
+
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      final response = await googleAuthService.signIn();
+
+      if (!mounted) return;
+
+      final data = response.data;
+
+      if (data["token"] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Google registration successful: ${data["user"]["email"]}',
+            ),
+          ),
+        );
+
+        context.go('/home');
+      } else {
+        throw Exception(
+          'Authentication token was not returned by the server',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Google registration failed: $e',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -156,7 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Logo
               Center(
                 child: Image.asset(
-                  "assets/images/logo.png",
+                  "assets/images/logo.jpeg",
                   height: 90,
                 ),
               ),
@@ -286,11 +336,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Google
               SocialLoginButton(
                 icon: Icons.g_mobiledata,
-                title: "Continue with Google",
-                onPressed: () {
-                  // Google Sign-In will be implemented
-                  // after normal authentication is stable.
-                },
+                title: isLoading
+                    ? "Connecting..."
+                    : "Continue with Google",
+                onPressed: registerWithGoogle,
               ),
 
               const SizedBox(height: 35),

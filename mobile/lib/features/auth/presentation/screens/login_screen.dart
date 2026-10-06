@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               Center(
                 child: Image.asset(
-                  "assets/images/logo.png",
+                  "assets/images/logo.jpeg",
                   height: 90,
                 ),
               ),
@@ -288,19 +288,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Spacer(),
 
                   TextButton(
-
                     onPressed: () {
-
+                      context.go('/forgot-password');
                     },
-
                     child: const Text(
                       "Forgot Password?",
                     ),
-
                   )
-
                 ],
-
               ),
 
               const SizedBox(height: 10),

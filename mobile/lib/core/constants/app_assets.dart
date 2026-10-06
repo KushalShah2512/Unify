@@ -1,7 +1,7 @@
 class AppAssets {
   AppAssets._();
 
-  static const logo = "assets/images/logo.png";
+  static const logo = "assets/images/logo.jpeg";
 
   static const onboarding1 =
       "assets/images/onboarding1.png";

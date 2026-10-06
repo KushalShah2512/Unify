@@ -54,7 +54,12 @@ class _OpportunityReadinessScreenState
 
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Opportunity Readiness Error: $e');
+      debugPrint('❌ Stack Trace: $stackTrace');
+
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
         _errorMessage =
