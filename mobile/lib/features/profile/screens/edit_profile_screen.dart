@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:unify/core/services/api_service.dart';
 
@@ -46,26 +47,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final response = await apiService.getStudentProfile();
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && response.data["profile"] != null) {
         final profile = response.data["profile"];
 
-        fullNameController.text = profile["fullName"] ?? "";
-        emailController.text = profile["user"]?["email"] ?? "";
-        phoneController.text = profile["phone"] ?? "";
-        locationController.text = profile["location"] ?? "";
-        bioController.text = profile["bio"] ?? "";
-        educationController.text = profile["education"] ?? "";
-        careerGoalController.text = profile["careerGoal"] ?? "";
-        availabilityController.text = profile["availability"] ?? "";
+        fullNameController.text = profile["fullName"]?.toString() ?? "";
+        emailController.text = profile["user"]?["email"]?.toString() ?? "";
+        phoneController.text = profile["phone"]?.toString() ?? "";
+        locationController.text = profile["location"]?.toString() ?? "";
+        bioController.text = profile["bio"]?.toString() ?? "";
+        educationController.text = profile["education"]?.toString() ?? "";
+        careerGoalController.text = profile["careerGoal"]?.toString() ?? "";
+        availabilityController.text = profile["availability"]?.toString() ?? "";
       }
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Failed to load profile"),
-        ),
-      );
+    } catch (_) {
+      // Don't interrupt user with error snackbar on empty initial profile
     } finally {
       if (mounted) {
         setState(() {
@@ -80,6 +75,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Full name is required"),
+          backgroundColor: Color(0xFFEF4444),
         ),
       );
       return;
@@ -92,12 +88,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final response = await apiService.updateStudentProfile(
         fullName: fullNameController.text.trim(),
-        phone: phoneController.text.trim(),
-        location: locationController.text.trim(),
-        bio: bioController.text.trim(),
-        education: educationController.text.trim(),
-        careerGoal: careerGoalController.text.trim(),
-        availability: availabilityController.text.trim(),
+        phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+        location: locationController.text.trim().isEmpty ? null : locationController.text.trim(),
+        bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
+        education: educationController.text.trim().isEmpty ? null : educationController.text.trim(),
+        careerGoal: careerGoalController.text.trim().isEmpty ? null : careerGoalController.text.trim(),
+        availability: availabilityController.text.trim().isEmpty ? null : availabilityController.text.trim(),
       );
 
       if (response.statusCode == 200) {
@@ -106,6 +102,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Profile updated successfully"),
+            backgroundColor: Color(0xFF10B981),
           ),
         );
 
@@ -114,9 +111,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (!mounted) return;
 
+      String errorMsg = "Failed to update profile";
+      if (e is DioException) {
+        final serverMsg = e.response?.data?["message"];
+        if (serverMsg != null && serverMsg.toString().isNotEmpty) {
+          errorMsg = serverMsg.toString();
+        } else if (e.message != null && e.message!.isNotEmpty) {
+          errorMsg = e.message!;
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Failed to update profile"),
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: const Color(0xFFEF4444),
         ),
       );
     } finally {

@@ -18,6 +18,9 @@ import 'package:unify/features/ai/screens/opportunity_readiness_screen.dart';
 import 'package:unify/features/opportunities/screens/opportunities_screen.dart';
 import 'package:unify/features/opportunities/screens/opportunity_details_screen.dart';
 import 'package:unify/features/auth/presentation/screens/forgot_password_screen.dart';
+import 'package:unify/features/ai/screens/ai_career_assistant_screen.dart';
+import 'package:unify/features/ai/screens/ats_resume_checker_screen.dart';
+import 'package:unify/features/profile/screens/settings_screen.dart';
 
 import 'route_names.dart';
 
@@ -111,7 +114,10 @@ final GoRouter appRouter = GoRouter(
 
     GoRoute(
       path: RouteNames.opportunities,
-      builder: (context, state) => const OpportunitiesScreen(),
+      builder: (context, state) {
+        final initialTab = (state.extra as Map<String, dynamic>?)?['initialTab'] as int? ?? 0;
+        return OpportunitiesScreen(initialTab: initialTab);
+      },
     ),
 
     GoRoute(
@@ -124,6 +130,21 @@ final GoRouter appRouter = GoRouter(
           opportunity: opportunity,
         );
       },
+    ),
+
+    GoRoute(
+      path: RouteNames.aiAssistant,
+      builder: (context, state) => const AiCareerAssistantScreen(),
+    ),
+
+    GoRoute(
+      path: RouteNames.atsChecker,
+      builder: (context, state) => const AtsResumeCheckerScreen(),
+    ),
+
+    GoRoute(
+      path: RouteNames.settings,
+      builder: (context, state) => const SettingsScreen(),
     ),
   ],
 );

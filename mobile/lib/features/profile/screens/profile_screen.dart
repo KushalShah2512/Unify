@@ -33,18 +33,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (!mounted) return;
 
         setState(() {
-            fullName = profile["fullName"] ?? "Student";
-            email = profile["user"]?["email"] ?? "student@test.com";
-            isLoading = false;
+          final name = profile["fullName"]?.toString() ?? "";
+          fullName = name.isNotEmpty ? name : "Student";
+          email = profile["user"]?["email"]?.toString() ?? "";
+          isLoading = false;
         });
       }
     } catch (e) {
-      // If profile API doesn't return email,
-      // temporarily use the logged-in email.
       if (!mounted) return;
 
       setState(() {
-        email = "student@test.com";
         isLoading = false;
       });
     }
@@ -109,8 +107,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.person_outline,
                     title: "Edit Profile",
                     subtitle: "Update your personal information",
-                    onTap: () {
-                        context.push('/edit-profile');
+                    onTap: () async {
+                      await context.push('/edit-profile');
+                      _loadProfile();
                     },
                   ),
 

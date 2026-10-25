@@ -39,6 +39,7 @@ model StudentProfile {
   projects          Project[]
   certifications    Certification[]
   educationRecords  Education[]
+  applications      Application[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -143,8 +144,23 @@ model Opportunity {
   requiredSkills  String[]
   preferredSkills String?
   experience      String?
-  isActive        Boolean  @default(true)
+  isActive        Boolean       @default(true)
+  applications    Application[]
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Application {
+  id            Int            @id @default(autoincrement())
+  studentId     Int
+  opportunityId Int
+  status        String         @default("APPLIED")
+  coverLetter   String?
+  appliedAt     DateTime       @default(now())
+
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, opportunityId])
 }

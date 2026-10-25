@@ -63,11 +63,10 @@ const createProfile = async (req, res) => {
 
 const getProfile = async (req, res) => {
   try {
-    const profile = await prisma.studentProfile.findUnique({
+    let profile = await prisma.studentProfile.findUnique({
       where: {
         userId: req.user.userId,
       },
-
       include: {
         user: {
           select: {
@@ -78,9 +77,33 @@ const getProfile = async (req, res) => {
     });
 
     if (!profile) {
-      return res.status(404).json({
-        message: "Student profile not found",
-        status: "error",
+      // Auto-create profile using user's email if not created yet
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found",
+          status: "error",
+        });
+      }
+
+      const defaultName = user.email.split("@")[0];
+      const formattedName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
+
+      profile = await prisma.studentProfile.create({
+        data: {
+          userId: user.id,
+          fullName: formattedName,
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+            },
+          },
+        },
       });
     }
 
@@ -112,31 +135,37 @@ const updateProfile = async (req, res) => {
       availability,
     } = req.body;
 
-    const existingProfile = await prisma.studentProfile.findUnique({
+    const nameToSave = fullName && fullName.trim() !== "" ? fullName.trim() : "Student";
+
+    const profile = await prisma.studentProfile.upsert({
       where: {
         userId: req.user.userId,
       },
-    });
-
-    if (!existingProfile) {
-      return res.status(404).json({
-        message: "Student profile not found",
-        status: "error",
-      });
-    }
-
-    const profile = await prisma.studentProfile.update({
-      where: {
+      create: {
         userId: req.user.userId,
+        fullName: nameToSave,
+        phone: phone || null,
+        location: location || null,
+        bio: bio || null,
+        education: education || null,
+        careerGoal: careerGoal || null,
+        availability: availability || null,
       },
-      data: {
-        fullName,
-        phone,
-        location,
-        bio,
-        education,
-        careerGoal,
-        availability,
+      update: {
+        fullName: nameToSave,
+        phone: phone || null,
+        location: location || null,
+        bio: bio || null,
+        education: education || null,
+        careerGoal: careerGoal || null,
+        availability: availability || null,
+      },
+      include: {
+        user: {
+          select: {
+            email: true,
+          },
+        },
       },
     });
 

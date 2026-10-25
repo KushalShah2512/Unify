@@ -18,4 +18,7 @@ class RouteNames {
   static const opportunityReadiness = '/opportunity-readiness';
   static const opportunities = '/opportunities';
   static const opportunityDetails = '/opportunity-details';
+  static const aiAssistant = '/ai-assistant';
+  static const atsChecker = '/ats-checker';
+  static const settings = '/settings';
 }

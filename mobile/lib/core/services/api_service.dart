@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:unify/core/services/storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.23.46.7:5000';
+  static const String baseUrl = 'http://10.138.3.181:5000';
 
   late final Dio dio;
 
@@ -73,6 +73,28 @@ class ApiService {
       '/api/auth/google',
       data: {
         'idToken': idToken,
+      },
+    );
+  }
+
+  Future<Response> requestPasswordReset({required String email}) {
+    return dio.post(
+      '/api/auth/forgot-password',
+      data: {'email': email.trim()},
+    );
+  }
+
+  Future<Response> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) {
+    return dio.post(
+      '/api/auth/reset-password',
+      data: {
+        'email': email.trim(),
+        'code': code.trim(),
+        'password': password,
       },
     );
   }
@@ -409,4 +431,110 @@ Future<Response> deleteCertification(int id) async {
   Future<Response> getOpportunities() async {
     return await dio.get('/api/opportunities');
   }
+
+  // =====================================================
+  // AI Career Assistant & ATS Resume Checker
+  // =====================================================
+
+  Future<Response> careerChat({
+    required String message,
+    List<Map<String, dynamic>>? conversationHistory,
+  }) async {
+    return await dio.post(
+      '/api/ai/career-chat',
+      data: {
+        'message': message,
+        'conversationHistory': conversationHistory ?? [],
+      },
+    );
+  }
+
+  Future<Response> conductMockInterview({
+    String? role,
+    String? type,
+    int? currentQuestionNumber,
+    String? previousQuestion,
+    String? candidateAnswer,
+  }) async {
+    return await dio.post(
+      '/api/ai/mock-interview',
+      data: {
+        if (role != null) 'role': role,
+        if (type != null) 'type': type,
+        if (currentQuestionNumber != null) 'currentQuestionNumber': currentQuestionNumber,
+        if (previousQuestion != null) 'previousQuestion': previousQuestion,
+        if (candidateAnswer != null) 'candidateAnswer': candidateAnswer,
+      },
+    );
+  }
+
+  Future<Response> atsResumeChecker({
+    String? targetRole,
+    String? jobDescription,
+    String? customResumeText,
+    String? filePath,
+    List<int>? fileBytes,
+    String? fileName,
+  }) async {
+    if ((filePath != null && filePath.isNotEmpty) || (fileBytes != null && fileBytes.isNotEmpty)) {
+      MultipartFile multipartFile;
+      if (filePath != null && filePath.isNotEmpty) {
+        multipartFile = await MultipartFile.fromFile(
+          filePath,
+          filename: fileName,
+        );
+      } else {
+        multipartFile = MultipartFile.fromBytes(
+          fileBytes!,
+          filename: fileName ?? 'resume.pdf',
+        );
+      }
+
+      final formData = FormData.fromMap({
+        if (targetRole != null && targetRole.isNotEmpty) 'targetRole': targetRole,
+        if (jobDescription != null && jobDescription.isNotEmpty) 'jobDescription': jobDescription,
+        if (customResumeText != null && customResumeText.isNotEmpty) 'customResumeText': customResumeText,
+        'resumeFile': multipartFile,
+      });
+
+      return await dio.post(
+        '/api/ai/ats-checker',
+        data: formData,
+      );
+    }
+
+    return await dio.post(
+      '/api/ai/ats-checker',
+      data: {
+        if (targetRole != null && targetRole.isNotEmpty) 'targetRole': targetRole,
+        if (jobDescription != null && jobDescription.isNotEmpty) 'jobDescription': jobDescription,
+        if (customResumeText != null && customResumeText.isNotEmpty) 'customResumeText': customResumeText,
+      },
+    );
+  }
+
+  // =====================================================
+  // Career Passport Export & Applications
+  // =====================================================
+
+  Future<Response> exportCareerPassport() async {
+    return await dio.get('/api/students/career-passport/export');
+  }
+
+  Future<Response> applyToOpportunity({
+    required int opportunityId,
+    String? coverLetter,
+  }) async {
+    return await dio.post(
+      '/api/opportunities/$opportunityId/apply',
+      data: {
+        'coverLetter': coverLetter,
+      },
+    );
+  }
+
+  Future<Response> getMyApplications() async {
+    return await dio.get('/api/opportunities/my-applications');
+  }
 }
+

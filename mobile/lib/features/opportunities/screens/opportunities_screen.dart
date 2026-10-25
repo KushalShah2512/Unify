@@ -1,115 +1,664 @@
 import 'package:flutter/material.dart';
-import 'package:unify/core/services/api_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:unify/core/routes/route_names.dart';
+import 'package:unify/core/services/api_service.dart';
 
 class OpportunitiesScreen extends StatefulWidget {
-  const OpportunitiesScreen({super.key});
+  final int initialTab;
+
+  const OpportunitiesScreen({
+    super.key,
+    this.initialTab = 0,
+  });
 
   @override
   State<OpportunitiesScreen> createState() => _OpportunitiesScreenState();
 }
 
-class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
+class _OpportunitiesScreenState extends State<OpportunitiesScreen>
+    with SingleTickerProviderStateMixin {
   final ApiService _apiService = ApiService();
 
-  bool _isLoading = true;
-  String? _errorMessage;
-  List<dynamic> _opportunities = [];
+  late TabController _tabController;
+
+  // Opportunities state
+  bool _isLoadingOpps = true;
+  String? _oppsError;
+  List<dynamic> _allOpportunities = [];
+  List<dynamic> _filteredOpportunities = [];
+
+  // Search & Filter state
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedTypeFilter = 'All';
+  String _selectedWorkModeFilter = 'All';
+
+  // Applications state
+  bool _isLoadingApps = true;
+  String? _appsError;
+  List<dynamic> _myApplications = [];
 
   @override
   void initState() {
     super.initState();
-    _loadOpportunities();
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, 1),
+    );
+
+    _searchController.addListener(_applyFilters);
+    _loadAllData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAllData() async {
+    await Future.wait([
+      _loadOpportunities(),
+      _loadMyApplications(),
+    ]);
   }
 
   Future<void> _loadOpportunities() async {
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      _isLoadingOpps = true;
+      _oppsError = null;
     });
 
     try {
       final response = await _apiService.getOpportunities();
-
-      setState(() {
-        _opportunities = response.data['opportunities'] ?? [];
-        _isLoading = false;
-      });
+      if (response.statusCode == 200) {
+        final list = (response.data['opportunities'] as List?) ?? [];
+        if (mounted) {
+          setState(() {
+            _allOpportunities = list;
+            _isLoadingOpps = false;
+          });
+          _applyFilters();
+        }
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Failed to load opportunities';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingOpps = false;
+          _oppsError = 'Failed to load opportunities';
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMyApplications() async {
+    setState(() {
+      _isLoadingApps = true;
+      _appsError = null;
+    });
+
+    try {
+      final response = await _apiService.getMyApplications();
+      if (response.statusCode == 200) {
+        final list = (response.data['applications'] as List?) ?? [];
+        if (mounted) {
+          setState(() {
+            _myApplications = list;
+            _isLoadingApps = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingApps = false;
+          _appsError = 'Failed to load your applications';
+        });
+      }
+    }
+  }
+
+  void _applyFilters() {
+    final query = _searchController.text.trim().toLowerCase();
+
+    setState(() {
+      _filteredOpportunities = _allOpportunities.where((opp) {
+        final title = (opp['title'] ?? '').toString().toLowerCase();
+        final company = (opp['companyName'] ?? '').toString().toLowerCase();
+        final type = (opp['type'] ?? '').toString().toLowerCase();
+        final workMode = (opp['workMode'] ?? '').toString().toLowerCase();
+        final skills = List<String>.from(opp['requiredSkills'] ?? [])
+            .map((s) => s.toLowerCase())
+            .join(' ');
+
+        // Keyword query
+        final matchesQuery = query.isEmpty ||
+            title.contains(query) ||
+            company.contains(query) ||
+            skills.contains(query);
+
+        // Type filter
+        final matchesType = _selectedTypeFilter == 'All' ||
+            type.contains(_selectedTypeFilter.toLowerCase());
+
+        // Work mode filter
+        final matchesWorkMode = _selectedWorkModeFilter == 'All' ||
+            workMode.contains(_selectedWorkModeFilter.toLowerCase());
+
+        return matchesQuery && matchesType && matchesWorkMode;
+      }).toList();
+    });
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'ACCEPTED':
+        return const Color(0xFF10B981);
+      case 'SHORTLISTED':
+        return const Color(0xFF8B5CF6);
+      case 'UNDER_REVIEW':
+      case 'REVIEWING':
+        return const Color(0xFF0284C7);
+      case 'REJECTED':
+        return const Color(0xFFEF4444);
+      case 'APPLIED':
+      case 'PENDING':
+      default:
+        return const Color(0xFFF59E0B);
+    }
+  }
+
+  String _formatStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'UNDER_REVIEW':
+        return 'Under Review';
+      case 'SHORTLISTED':
+        return 'Shortlisted';
+      case 'ACCEPTED':
+        return 'Offer Accepted';
+      case 'REJECTED':
+        return 'Not Selected';
+      case 'APPLIED':
+      default:
+        return 'Applied';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Opportunities'),
+        title: const Text(
+          'Opportunities',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: const Color(0xFF4F46E5),
+          unselectedLabelColor: const Color(0xFF64748B),
+          indicatorColor: const Color(0xFF4F46E5),
+          indicatorWeight: 3,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          tabs: [
+            const Tab(
+              icon: Icon(Icons.explore_outlined, size: 20),
+              text: 'Explore Jobs',
+            ),
+            Tab(
+              icon: const Icon(Icons.send_outlined, size: 20),
+              text: 'My Applications (${_myApplications.length})',
+            ),
+          ],
+        ),
       ),
-      body: _buildBody(),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildExploreTab(),
+          _buildApplicationsTab(),
+        ],
+      ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+  // ==========================================
+  // TAB 1: Explore Opportunities & Filters
+  // ==========================================
+  Widget _buildExploreTab() {
+    return RefreshIndicator(
+      onRefresh: _loadOpportunities,
+      child: Column(
+        children: [
+          // Search & Filter Header
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+            child: Column(
+              children: [
+                // Search Field
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search roles, skills, or companies...',
+                    hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B)),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              _applyFilters();
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: const Color(0xFFF1F5F9),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Filter Pills Horizontal List
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildFilterChip('All Types', 'All', _selectedTypeFilter, (val) {
+                        setState(() => _selectedTypeFilter = val);
+                        _applyFilters();
+                      }),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Internship', 'Internship', _selectedTypeFilter, (val) {
+                        setState(() => _selectedTypeFilter = val);
+                        _applyFilters();
+                      }),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Full-time', 'Full-time', _selectedTypeFilter, (val) {
+                        setState(() => _selectedTypeFilter = val);
+                        _applyFilters();
+                      }),
+                      const SizedBox(width: 8),
+                      Container(height: 20, width: 1, color: const Color(0xFFCBD5E1)),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('All Modes', 'All', _selectedWorkModeFilter, (val) {
+                        setState(() => _selectedWorkModeFilter = val);
+                        _applyFilters();
+                      }),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Remote', 'Remote', _selectedWorkModeFilter, (val) {
+                        setState(() => _selectedWorkModeFilter = val);
+                        _applyFilters();
+                      }),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('On-site', 'On-site', _selectedWorkModeFilter, (val) {
+                        setState(() => _selectedWorkModeFilter = val);
+                        _applyFilters();
+                      }),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Content Area
+          Expanded(
+            child: _buildOpportunitiesList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(
+    String label,
+    String value,
+    String currentSelection,
+    ValueChanged<String> onSelected,
+  ) {
+    final isSelected = currentSelection.toLowerCase() == value.toLowerCase();
+
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => onSelected(value),
+      selectedColor: const Color(0xFF4F46E5),
+      backgroundColor: const Color(0xFFF1F5F9),
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : const Color(0xFF475569),
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        fontSize: 12,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      visualDensity: VisualDensity.compact,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      side: BorderSide(
+        color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0),
+      ),
+    );
+  }
+
+  Widget _buildOpportunitiesList() {
+    if (_isLoadingOpps) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF4F46E5)));
     }
 
-    if (_errorMessage != null) {
+    if (_oppsError != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 48,
-            ),
+            const Icon(Icons.error_outline, size: 48, color: Color(0xFFEF4444)),
             const SizedBox(height: 12),
-            Text(_errorMessage!),
+            Text(_oppsError!, style: const TextStyle(color: Color(0xFF64748B))),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadOpportunities,
-              child: const Text('Retry'),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4F46E5)),
+              child: const Text('Retry', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
       );
     }
 
-    if (_opportunities.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _loadOpportunities,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 300),
-            Center(
-              child: Text('No opportunities available'),
-            ),
-          ],
+    if (_filteredOpportunities.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off, size: 54, color: Colors.grey.shade400),
+              const SizedBox(height: 12),
+              const Text(
+                'No matching opportunities found',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Try adjusting your search terms or filters',
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+            ],
+          ),
         ),
       );
     }
 
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _filteredOpportunities.length,
+      itemBuilder: (context, index) {
+        final opportunity = _filteredOpportunities[index];
+        return _OpportunityCard(opportunity: opportunity);
+      },
+    );
+  }
+
+  // ==========================================
+  // TAB 2: My Applications Pipeline
+  // ==========================================
+  Widget _buildApplicationsTab() {
     return RefreshIndicator(
-      onRefresh: _loadOpportunities,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        itemCount: _opportunities.length,
-        itemBuilder: (context, index) {
-          final opportunity = _opportunities[index];
+      onRefresh: _loadMyApplications,
+      child: _buildApplicationsList(),
+    );
+  }
 
-          return _OpportunityCard(
-            opportunity: opportunity,
-          );
-        },
-      ),
+  Widget _buildApplicationsList() {
+    if (_isLoadingApps) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF4F46E5)));
+    }
+
+    if (_appsError != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Color(0xFFEF4444)),
+            const SizedBox(height: 12),
+            Text(_appsError!, style: const TextStyle(color: Color(0xFF64748B))),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadMyApplications,
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4F46E5)),
+              child: const Text('Retry', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_myApplications.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.send_outlined, size: 42, color: Color(0xFF4F46E5)),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No applications yet',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Browse available roles in the Explore tab and submit your Career Passport to start interviewing.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => _tabController.animateTo(0),
+                icon: const Icon(Icons.explore, size: 18),
+                label: const Text('Explore Open Roles'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F46E5),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _myApplications.length,
+      itemBuilder: (context, index) {
+        final app = _myApplications[index];
+        final opp = app['opportunity'] as Map<String, dynamic>? ?? {};
+        final status = (app['status'] ?? 'APPLIED').toString();
+        final statusColor = _getStatusColor(status);
+        final statusLabel = _formatStatusLabel(status);
+        final title = opp['title'] ?? 'Role';
+        final company = opp['companyName'] ?? 'Company';
+        final coverLetter = app['coverLetter']?.toString();
+        final appliedAt = app['appliedAt'] != null
+            ? DateTime.tryParse(app['appliedAt'].toString())
+            : null;
+
+        final dateFormatted = appliedAt != null
+            ? '${appliedAt.day}/${appliedAt.month}/${appliedAt.year}'
+            : 'Recently';
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Row: Role + Status Pill
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title.toString(),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            company.toString(),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 12),
+
+                // Cover letter snippet if present
+                if (coverLetter != null && coverLetter.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Text(
+                      'Cover note: "$coverLetter"',
+                      style: const TextStyle(
+                        color: Color(0xFF475569),
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+
+                // Footer Row: Date + View Details Link
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 14, color: Color(0xFF94A3B8)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Applied on $dateFormatted',
+                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        context.push(
+                          RouteNames.opportunityDetails,
+                          extra: opp,
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(50, 30),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'View Posting',
+                            style: TextStyle(
+                              color: Color(0xFF4F46E5),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          SizedBox(width: 2),
+                          Icon(Icons.arrow_forward_ios, size: 10, color: Color(0xFF4F46E5)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -121,6 +670,19 @@ class _OpportunityCard extends StatelessWidget {
     required this.opportunity,
   });
 
+  String _formatCurrency(dynamic val) {
+    if (val == null) return '';
+    final s = val.toString().trim();
+    if (s.isEmpty) return '';
+    if (s.startsWith('₹')) {
+      return s.replaceAll(RegExp(r'^₹+'), '₹');
+    }
+    if (s.startsWith('Rs') || s.startsWith(r'$')) {
+      return s;
+    }
+    return '₹$s';
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = opportunity['title'] ?? 'Untitled Opportunity';
@@ -130,170 +692,125 @@ class _OpportunityCard extends StatelessWidget {
     final workMode = opportunity['workMode'];
     final stipend = opportunity['stipend'];
     final salary = opportunity['salary'];
-    final requiredSkills =
-        List<String>.from(opportunity['requiredSkills'] ?? []);
+    final requiredSkills = List<String>.from(opportunity['requiredSkills'] ?? []);
 
     final compensation = stipend ?? salary;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title + arrow
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            context.push(
+              RouteNames.opportunityDetails,
+              extra: Map<String, dynamic>.from(opportunity),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
+                // Title + Arrow
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
                         ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF94A3B8)),
+                  ],
+                ),
+
+                const SizedBox(height: 4),
+
+                // Company
+                Text(
+                  company,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                    onPressed: () {
-                        context.push(
-                        RouteNames.opportunityDetails,
-                        extra: Map<String, dynamic>.from(opportunity),
-                        );
-                    },
-                    icon: const Icon(
-                        Icons.arrow_forward_ios,
-                        size: 17,
-                    ),
-                    tooltip: 'View details',
-                ),
-              ],
-            ),
 
-            const SizedBox(height: 6),
+                const SizedBox(height: 12),
 
-            // Company
-            Row(
-              children: [
-                Icon(
-                  Icons.business_outlined,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.primary,
+                // Chips (Type, Work Mode, Salary/Stipend)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _InfoChip(label: type, color: const Color(0xFF4F46E5)),
+                    if (workMode != null && workMode.toString().isNotEmpty)
+                      _InfoChip(label: workMode.toString(), color: const Color(0xFF0284C7)),
+                    if (compensation != null && compensation.toString().isNotEmpty)
+                      _InfoChip(
+                        label: _formatCurrency(compensation),
+                        color: const Color(0xFF10B981),
+                      ),
+                  ],
                 ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    company,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+
+                if (location != null && location.toString().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF94A3B8)),
+                      const SizedBox(width: 4),
+                      Text(
+                        location.toString(),
+                        style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            // Type + work mode
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _InfoChip(
-                  icon: Icons.work_outline,
-                  label: type,
-                ),
-                if (workMode != null && workMode.toString().isNotEmpty)
-                  _InfoChip(
-                    icon: Icons.laptop_outlined,
-                    label: workMode.toString(),
-                  ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Location + compensation
-            if (location != null ||
-                compensation != null) ...[
-              Wrap(
-                spacing: 16,
-                runSpacing: 8,
-                children: [
-                  if (location != null &&
-                      location.toString().isNotEmpty)
-                    _DetailRow(
-                      icon: Icons.location_on_outlined,
-                      text: location.toString(),
-                    ),
-                  if (compensation != null &&
-                      compensation.toString().isNotEmpty)
-                    _DetailRow(
-                      icon: Icons.payments_outlined,
-                      text: compensation.toString(),
-                    ),
                 ],
-              ),
-            ],
 
-            // Skills
-            if (requiredSkills.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Text(
-                'Required Skills',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 7,
-                runSpacing: 7,
-                children: requiredSkills
-                    .map(
-                      (skill) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
+                // Skills tags
+                if (requiredSkills.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: requiredSkills.take(3).map((skill) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           skill,
-                          style:
-                              Theme.of(context).textTheme.bodySmall,
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF475569)),
                         ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-
-            const SizedBox(height: 16),
-
-            // View details
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                    context.push(
-                        RouteNames.opportunityDetails,
-                        extra: Map<String, dynamic>.from(opportunity),
-                    );
-                },
-                child: const Text('View Details'),
-              ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -301,72 +818,31 @@ class _OpportunityCard extends StatelessWidget {
 }
 
 class _InfoChip extends StatelessWidget {
-  final IconData icon;
   final String label;
+  final Color color;
 
   const _InfoChip({
-    required this.icon,
     required this.label,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 7,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Theme.of(context)
-            .colorScheme
-            .primaryContainer,
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 16,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _DetailRow({
-    required this.icon,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 18,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      ],
     );
   }
 }

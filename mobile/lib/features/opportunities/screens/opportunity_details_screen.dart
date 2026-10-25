@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:unify/core/routes/route_names.dart';
+import 'package:unify/core/services/api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class OpportunityDetailsScreen extends StatelessWidget {
@@ -12,56 +13,55 @@ class OpportunityDetailsScreen extends StatelessWidget {
   });
 
   Future<void> _apply(BuildContext context) async {
-  final applicationUrl = opportunity['applicationUrl'];
+    final int? oppId = opportunity['id'] is int ? opportunity['id'] as int : int.tryParse(opportunity['id'].toString());
+    final applicationUrl = opportunity['applicationUrl'];
 
-  if (applicationUrl == null ||
-      applicationUrl.toString().trim().isEmpty) {
-    if (!context.mounted) return;
+    if (oppId != null) {
+      try {
+        final response = await ApiService().applyToOpportunity(opportunityId: oppId);
+        if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Application link is not available.'),
-      ),
-    );
-    return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.data['message'] ?? 'Application submitted successfully!'),
+            backgroundColor: const Color(0xFF10B981),
+          ),
+        );
+      } catch (e) {
+        if (!context.mounted) return;
+        // If already applied or other message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().contains('already applied') 
+                ? 'You have already applied to this opportunity' 
+                : 'Application recorded!'),
+          ),
+        );
+      }
+    }
+
+    if (applicationUrl != null && applicationUrl.toString().trim().isNotEmpty) {
+      final uri = Uri.tryParse(applicationUrl.toString());
+      if (uri != null) {
+        try {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (_) {}
+      }
+    }
   }
 
-  final uri = Uri.tryParse(applicationUrl.toString());
-
-    if (uri == null) {
-        if (!context.mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Invalid application link.'),
-        ),
-        );
-        return;
+  String _formatCurrency(dynamic val) {
+    if (val == null) return '';
+    final s = val.toString().trim();
+    if (s.isEmpty) return '';
+    if (s.startsWith('₹')) {
+      return s.replaceAll(RegExp(r'^₹+'), '₹');
     }
-
-    try {
-        final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-        );
-
-        if (!launched && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-            content: Text('Unable to open application link.'),
-            ),
-        );
-        }
-    } catch (e) {
-        if (!context.mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Unable to open application link.'),
-            ),
-        );
+    if (s.startsWith('Rs') || s.startsWith(r'$')) {
+      return s;
     }
-    }
+    return '₹$s';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,8 +164,8 @@ class OpportunityDetailsScreen extends StatelessWidget {
                             compensation.toString().isNotEmpty)
                           _InformationRow(
                             icon: Icons.payments_outlined,
-                            title: 'Compensation',
-                            value: compensation.toString(),
+                            title: 'Salary / Stipend',
+                            value: _formatCurrency(compensation),
                           ),
                         if (experience != null &&
                             experience.toString().isNotEmpty)

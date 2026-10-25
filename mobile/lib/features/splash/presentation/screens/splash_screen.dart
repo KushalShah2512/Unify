@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/services/storage_service.dart';
 import '../widgets/animated_logo.dart';
 
@@ -45,32 +46,36 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Future.delayed(
-      AppConstants.splashDuration,
-      () async {
+    Future.delayed(AppConstants.splashDuration, () async {
+      try {
         final onboardingCompleted =
             await StorageService.isOnboardingCompleted();
-
-        final token = await StorageService.getToken();
 
         if (!mounted) return;
 
         // First-time user
         if (!onboardingCompleted) {
-          context.go('/onboarding');
+          context.go(RouteNames.onboarding);
           return;
         }
 
-        // Returning user with saved login session
-        if (token != null && token.isNotEmpty) {
-          context.go('/home');
+        // Returning user with an unexpired login session.
+        if (await StorageService.hasValidSession()) {
+          if (!mounted) return;
+          context.go(RouteNames.home);
           return;
         }
 
-        // Returning user without a login session
-        context.go('/login');
-      },
-    );
+        // Clear expired or malformed session data before login.
+        await StorageService.clearToken();
+        if (!mounted) return;
+        context.go(RouteNames.login);
+      } catch (_) {
+        // Local storage failures must not leave the startup screen blocked.
+        if (!mounted) return;
+        context.go(RouteNames.login);
+      }
+    });
   }
 
   @override

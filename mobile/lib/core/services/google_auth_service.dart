@@ -15,7 +15,7 @@ class GoogleAuthService {
     );
   }
 
-  Future<Response> signIn() async {
+  Future<Response> signIn({bool rememberMe = true}) async {
     await initialize();
 
     final GoogleSignInAccount account =
@@ -42,7 +42,10 @@ class GoogleAuthService {
       );
     }
 
-    await StorageService.saveToken(data['token']);
+    await StorageService.saveToken(
+      data['token'],
+      persist: rememberMe,
+    );
 
     return response;
   }

@@ -48,7 +48,9 @@ class _LoginScreenState extends State<LoginScreen> {
         isLoading = true;
       });
 
-      final response = await googleAuthService.signIn();
+      final response = await googleAuthService.signIn(
+        rememberMe: rememberMe,
+      );
 
       if (!mounted) return;
 
@@ -118,6 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
           data["token"] != null) {
         await StorageService.saveToken(
           data["token"],
+          persist: rememberMe,
         );
 
         if (!mounted) return;
@@ -271,11 +274,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     value: rememberMe,
 
-                    onChanged: (value) {
+                    onChanged: isLoading ? null : (value) {
 
                       setState(() {
 
-                        rememberMe = value!;
+                        rememberMe = value ?? false;
 
                       });
 
@@ -302,7 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               AuthButton(
                 title: isLoading ? "Signing In..." : "Sign In",
-                onPressed: login,
+                onPressed: isLoading ? null : login,
               ),
 
               const SizedBox(height: 30),
@@ -342,7 +345,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 title: "Continue with Google",
 
-                onPressed: signInWithGoogle,
+                onPressed: isLoading ? null : signInWithGoogle,
 
               ),
 

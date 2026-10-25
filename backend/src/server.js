@@ -24,6 +24,7 @@ const educationRoutes = require("./routes/education_routes");
 const opportunityRoutes = require("./routes/opportunity_routes");
 
 const aiRoutes = require("./routes/ai_routes");
+const adminRoutes = require("./routes/admin_routes");
 const app = express();
 
 app.use(cors());
@@ -39,8 +40,8 @@ app.use("/api/students/career-passport", careerPassportRoutes);
 
 app.use("/api/ai", aiRoutes);
 app.use("/api/opportunities", opportunityRoutes);
-
 app.use("/api/employers", employerRoutes);
+app.use("/api/admin", adminRoutes);
 // ====================
 // Basic Routes
 // ====================
