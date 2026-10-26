@@ -1,7 +1,23 @@
 import React, { useState } from 'react';
-import { UserCheck, Briefcase, Mail, CheckCircle2, XCircle, Clock, Eye, X, FileText, Phone, Award, GraduationCap } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { 
+  UserCheck, 
+  Briefcase, 
+  Mail, 
+  CheckCircle2, 
+  XCircle, 
+  Clock, 
+  Eye, 
+  X, 
+  FileText, 
+  Phone, 
+  Award, 
+  GraduationCap, 
+  ShieldCheck, 
+  ExternalLink 
+} from 'lucide-react';
 
-export default function ApplicationsTab({ applications, onUpdateStatus, loading }) {
+export default function ApplicationsTab({ applications, onUpdateStatus, onVerifyResume, loading }) {
   const [filter, setFilter] = useState('ALL');
   const [selectedApp, setSelectedApp] = useState(null);
 
@@ -26,11 +42,12 @@ export default function ApplicationsTab({ applications, onUpdateStatus, loading 
   };
 
   return (
-    <div className="panel">
+    <>
+      <div className="panel">
       <div className="panel-header">
         <div className="panel-title">
           <h2>Candidate Applications ({filtered.length})</h2>
-          <p>Review student applications and track recruitment pipeline</p>
+          <p>Review student applications, verify resumes, and track recruitment pipeline</p>
         </div>
 
         <div className="table-controls">
@@ -55,7 +72,7 @@ export default function ApplicationsTab({ applications, onUpdateStatus, loading 
             <tr>
               <th>Applicant Name</th>
               <th>Opportunity Applied</th>
-              <th>Applicant Skills</th>
+              <th>Resume Status</th>
               <th>Applied Date</th>
               <th>Status</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
@@ -74,7 +91,8 @@ export default function ApplicationsTab({ applications, onUpdateStatus, loading 
                 const studentEmail = app.student?.user?.email || '—';
                 const oppTitle = app.opportunity?.title || 'Opportunity';
                 const oppCompany = app.opportunity?.companyName || '';
-                const skills = (app.student?.skills || []).map((s) => s.name);
+                const hasResume = !!app.student?.resumeUrl;
+                const isResumeVerified = !!app.student?.isResumeVerified;
 
                 return (
                   <tr key={app.id}>
@@ -93,25 +111,19 @@ export default function ApplicationsTab({ applications, onUpdateStatus, loading 
                       </div>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', maxWidth: '200px' }}>
-                        {skills.slice(0, 3).map((s, idx) => (
+                      {hasResume ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span 
-                            key={idx}
-                            style={{
-                              background: 'rgba(255,255,255,0.06)',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              color: '#cbd5e1'
-                            }}
+                            className={`badge ${isResumeVerified ? 'badge-approved' : 'badge-pending'}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}
                           >
-                            {s}
+                            <FileText size={10} />
+                            {isResumeVerified ? 'Verified' : 'Pending Review'}
                           </span>
-                        ))}
-                        {skills.length > 3 && (
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>+{skills.length - 3}</span>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>No file</span>
+                      )}
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -138,28 +150,22 @@ export default function ApplicationsTab({ applications, onUpdateStatus, loading 
                         {app.status !== 'SHORTLISTED' && app.status !== 'ACCEPTED' && (
                           <button 
                             className="btn btn-secondary"
-                            style={{ padding: '5px 10px', fontSize: '11px' }}
+                            style={{ padding: '5px 8px', fontSize: '11px', color: '#818cf8', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+                            title="Shortlist Candidate"
                             onClick={() => onUpdateStatus(app.id, 'SHORTLISTED')}
                           >
                             Shortlist
                           </button>
                         )}
+
                         {app.status !== 'ACCEPTED' && (
                           <button 
-                            className="btn btn-success"
-                            style={{ padding: '5px 10px', fontSize: '11px' }}
+                            className="btn btn-primary"
+                            style={{ padding: '5px 8px', fontSize: '11px' }}
+                            title="Accept / Offer"
                             onClick={() => onUpdateStatus(app.id, 'ACCEPTED')}
                           >
-                            <CheckCircle2 size={12} /> Accept
-                          </button>
-                        )}
-                        {app.status !== 'REJECTED' && (
-                          <button 
-                            className="btn btn-danger"
-                            style={{ padding: '5px 10px', fontSize: '11px' }}
-                            onClick={() => onUpdateStatus(app.id, 'REJECTED')}
-                          >
-                            <XCircle size={12} /> Reject
+                            Accept
                           </button>
                         )}
                       </div>
@@ -169,97 +175,189 @@ export default function ApplicationsTab({ applications, onUpdateStatus, loading 
               })
             ) : (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '36px' }}>
-                  No candidate applications recorded yet. Applications submitted from the mobile app will appear here!
+                <td colSpan="6" style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                  No candidate applications found for the selected filter.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+    </div>
 
       {/* Candidate Application & Profile Review Modal */}
-      {selectedApp && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '640px' }}>
+      {selectedApp && typeof document !== 'undefined' && createPortal(
+        <div className="modal-backdrop" onClick={() => setSelectedApp(null)}>
+          <div 
+            className="modal-card" 
+            style={{ maxWidth: '640px' }} 
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <div>
-                <h3 style={{ margin: 0, color: '#fff', fontSize: '18px' }}>Candidate Application Dossier</h3>
-                <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '12px' }}>
+                <h3 style={{ margin: 0, color: '#fff', fontSize: '18px', fontWeight: '700' }}>
+                  Candidate Application Dossier
+                </h3>
+                <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '13px' }}>
                   Applied for <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{selectedApp.opportunity?.title}</span> at {selectedApp.opportunity?.companyName}
                 </p>
               </div>
               <button 
                 className="icon-button"
                 onClick={() => setSelectedApp(null)}
+                title="Close modal"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            <div style={{ maxHeight: '70vh', overflowY: 'auto', padding: '16px 0' }}>
+            <div className="modal-body">
               {/* Candidate Info Box */}
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '14px', marginBottom: '14px' }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#fff', fontSize: '15px' }}>
+              <div style={{ 
+                background: 'rgba(30, 41, 59, 0.7)', 
+                border: '1px solid rgba(255, 255, 255, 0.08)', 
+                borderRadius: '12px', 
+                padding: '16px', 
+                marginBottom: '16px' 
+              }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#fff', fontSize: '16px', fontWeight: '700' }}>
                   {selectedApp.student?.fullName || 'Candidate'}
                 </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', fontSize: '12px', color: '#cbd5e1' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Mail size={13} color="#818cf8" /> {selectedApp.student?.user?.email || 'N/A'}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Mail size={14} color="#818cf8" /> {selectedApp.student?.user?.email || 'N/A'}
                   </div>
                   {selectedApp.student?.phoneNumber && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Phone size={13} color="#818cf8" /> {selectedApp.student.phoneNumber}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Phone size={14} color="#818cf8" /> {selectedApp.student.phoneNumber}
                     </div>
                   )}
                   {selectedApp.student?.careerGoal && (
-                    <div style={{ gridColumn: '1 / -1', color: '#94a3b8' }}>
-                      <strong>Target Role:</strong> {selectedApp.student.careerGoal}
+                    <div style={{ gridColumn: '1 / -1', color: '#94a3b8', fontSize: '12px' }}>
+                      <strong style={{ color: '#e2e8f0' }}>Target Role:</strong> {selectedApp.student.careerGoal}
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* Official Resume & Admin Verification Section */}
+              <div style={{ 
+                background: selectedApp.student?.isResumeVerified ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)', 
+                border: `1px solid ${selectedApp.student?.isResumeVerified ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`, 
+                borderRadius: '12px', 
+                padding: '16px', 
+                marginBottom: '16px' 
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={18} color={selectedApp.student?.isResumeVerified ? '#34d399' : '#fbbf24'} />
+                    <strong style={{ fontSize: '14px', color: '#fff' }}>Official Master Resume</strong>
+                  </div>
+                  {selectedApp.student?.resumeUrl ? (
+                    <span className={`badge ${selectedApp.student?.isResumeVerified ? 'badge-approved' : 'badge-pending'}`}>
+                      {selectedApp.student?.isResumeVerified ? '✓ Verified by Admin' : 'Pending Verification'}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>No Resume Uploaded</span>
+                  )}
+                </div>
+
+                {selectedApp.student?.resumeUrl ? (
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px' }}>
+                      <span style={{ color: '#fff', fontWeight: '600' }}>
+                        {selectedApp.student.resumeName || 'Candidate_Resume.pdf'}
+                      </span>
+                      {selectedApp.student.resumeSize && (
+                        <span> • {(selectedApp.student.resumeSize / 1024).toFixed(1)} KB</span>
+                      )}
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <a 
+                        href={selectedApp.student.resumeUrl.startsWith('http') ? selectedApp.student.resumeUrl : `http://localhost:5000${selectedApp.student.resumeUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-secondary"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '8px 14px' }}
+                      >
+                        <ExternalLink size={14} /> View Resume Document
+                      </a>
+
+                      {onVerifyResume && selectedApp.student?.id && (
+                        <button
+                          className="btn"
+                          style={{ 
+                            fontSize: '12px', 
+                            padding: '8px 14px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: selectedApp.student.isResumeVerified ? 'rgba(239, 68, 68, 0.15)' : '#10b981',
+                            border: `1px solid ${selectedApp.student.isResumeVerified ? '#ef4444' : '#10b981'}`,
+                            color: selectedApp.student.isResumeVerified ? '#fca5a5' : '#fff',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                          onClick={async () => {
+                            const newStatus = !selectedApp.student.isResumeVerified;
+                            await onVerifyResume(selectedApp.student.id, newStatus);
+                            setSelectedApp({
+                              ...selectedApp,
+                              student: {
+                                ...selectedApp.student,
+                                isResumeVerified: newStatus,
+                              }
+                            });
+                          }}
+                        >
+                          <ShieldCheck size={14} />
+                          {selectedApp.student.isResumeVerified ? 'Revoke Verification' : 'Verify Resume'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
+                    Candidate has not uploaded an official master resume. Application is based on filled Career Passport profile.
+                  </p>
+                )}
+              </div>
+
               {/* Cover Letter / Pitch */}
               {selectedApp.coverLetter && (
-                <div style={{ background: 'rgba(99, 102, 241, 0.06)', border: '1px solid rgba(99, 102, 241, 0.2)', borderRadius: '10px', padding: '12px', marginBottom: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#818cf8', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>
+                <div style={{ 
+                  background: 'rgba(99, 102, 241, 0.08)', 
+                  border: '1px solid rgba(99, 102, 241, 0.25)', 
+                  borderRadius: '12px', 
+                  padding: '14px', 
+                  marginBottom: '16px' 
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#818cf8', fontSize: '13px', fontWeight: '700', marginBottom: '6px' }}>
                     <FileText size={14} /> Candidate Pitch / Cover Note
                   </div>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#e2e8f0', lineHeight: 1.5 }}>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#e2e8f0', lineHeight: 1.55 }}>
                     {selectedApp.coverLetter}
                   </p>
                 </div>
               )}
 
-              {/* Resume / Portfolio Link */}
-              {selectedApp.student?.resumeUrl && (
-                <div style={{ marginBottom: '14px' }}>
-                  <a 
-                    href={selectedApp.student.resumeUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn btn-primary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '8px 14px' }}
-                  >
-                    <FileText size={14} /> Open Candidate Resume Document
-                  </a>
-                </div>
-              )}
-
               {/* Skills */}
-              <div style={{ marginBottom: '14px' }}>
-                <strong style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>Verified Skills</strong>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Verified Skills
+                </strong>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
                   {(selectedApp.student?.skills || []).map((s, idx) => (
                     <span 
                       key={idx}
                       style={{
                         background: 'rgba(99, 102, 241, 0.15)',
                         border: '1px solid rgba(99, 102, 241, 0.3)',
-                        padding: '4px 8px',
+                        padding: '4px 10px',
                         borderRadius: '6px',
-                        fontSize: '11px',
+                        fontSize: '12px',
+                        fontWeight: '500',
                         color: '#c7d2fe'
                       }}
                     >
@@ -274,13 +372,21 @@ export default function ApplicationsTab({ applications, onUpdateStatus, loading 
 
               {/* Education */}
               {selectedApp.student?.educationRecords && selectedApp.student.educationRecords.length > 0 && (
-                <div style={{ marginBottom: '14px' }}>
-                  <strong style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>Education</strong>
-                  <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <strong style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Education History
+                  </strong>
+                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {selectedApp.student.educationRecords.map((edu, idx) => (
-                      <div key={idx} style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: '6px', fontSize: '12px' }}>
+                      <div key={idx} style={{ 
+                        background: 'rgba(30, 41, 59, 0.5)', 
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        padding: '10px 14px', 
+                        borderRadius: '8px', 
+                        fontSize: '13px' 
+                      }}>
                         <div style={{ fontWeight: 'bold', color: '#fff' }}>{edu.degree} - {edu.fieldOfStudy || ''}</div>
-                        <div style={{ color: '#94a3b8' }}>{edu.institution}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '2px' }}>{edu.institution}</div>
                       </div>
                     ))}
                   </div>
@@ -288,8 +394,14 @@ export default function ApplicationsTab({ applications, onUpdateStatus, loading 
               )}
 
               {/* Current Pipeline Status Selector */}
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '14px', marginTop: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold' }}>
+              <div style={{ 
+                background: 'rgba(30, 41, 59, 0.7)', 
+                border: '1px solid rgba(255, 255, 255, 0.08)', 
+                borderRadius: '12px', 
+                padding: '16px', 
+                marginTop: '16px' 
+              }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Update Candidate Pipeline Stage
                 </label>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -297,27 +409,28 @@ export default function ApplicationsTab({ applications, onUpdateStatus, loading 
                     <button
                       key={st}
                       className={selectedApp.status === st ? 'btn btn-primary' : 'btn btn-secondary'}
-                      style={{ padding: '6px 12px', fontSize: '11px' }}
+                      style={{ padding: '7px 14px', fontSize: '12px' }}
                       onClick={async () => {
                         await onUpdateStatus(selectedApp.id, st);
                         setSelectedApp({ ...selectedApp, status: st });
                       }}
                     >
-                      {st === 'ACCEPTED' ? 'Accept / Offer' : st === 'REJECTED' ? 'Reject' : st}
+                      {st === 'ACCEPTED' ? 'Accept / Offer' : st === 'REJECTED' ? 'Reject' : st.replace('_', ' ')}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setSelectedApp(null)}>
                 Close Dossier
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }

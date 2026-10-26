@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:unify/core/services/storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.138.3.181:5000';
+  static const String baseUrl = 'http://10.23.17.10:5000';
 
   late final Dio dio;
 
@@ -535,6 +535,70 @@ Future<Response> deleteCertification(int id) async {
 
   Future<Response> getMyApplications() async {
     return await dio.get('/api/opportunities/my-applications');
+  }
+
+  // =====================================================
+  // Resume Management (Unstop / Naukri style verified resume)
+  // =====================================================
+
+  Future<Response> uploadStudentResume({
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    final formData = FormData.fromMap({
+      'resume': MultipartFile.fromBytes(bytes, filename: fileName),
+    });
+    return await dio.post('/api/students/resume', data: formData);
+  }
+
+  Future<Response> getStudentResume() async {
+    return await dio.get('/api/students/resume');
+  }
+
+  Future<Response> deleteStudentResume() async {
+    return await dio.delete('/api/students/resume');
+  }
+
+  // =====================================================
+  // Notifications Center
+  // =====================================================
+
+  Future<Response> getNotifications() async {
+    return await dio.get('/api/notifications');
+  }
+
+  Future<Response> markNotificationAsRead(int id) async {
+    return await dio.put('/api/notifications/$id/read');
+  }
+
+  Future<Response> markAllNotificationsAsRead() async {
+    return await dio.put('/api/notifications/read-all');
+  }
+
+  // =====================================================
+  // Saved Opportunities & Fraud Moderation Reporting
+  // =====================================================
+
+  Future<Response> toggleSaveOpportunity(int opportunityId) async {
+    return await dio.post('/api/opportunities/$opportunityId/save');
+  }
+
+  Future<Response> getSavedOpportunities() async {
+    return await dio.get('/api/opportunities/saved');
+  }
+
+  Future<Response> reportOpportunity({
+    required int opportunityId,
+    required String reason,
+    String? details,
+  }) async {
+    return await dio.post(
+      '/api/opportunities/$opportunityId/report',
+      data: {
+        'reason': reason,
+        'details': details,
+      },
+    );
   }
 }
 

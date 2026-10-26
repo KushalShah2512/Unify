@@ -31,6 +31,8 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
   final TextEditingController _searchController = TextEditingController();
   String _selectedTypeFilter = 'All';
   String _selectedWorkModeFilter = 'All';
+  bool _showOnlySaved = false;
+  Set<int> _savedOpportunityIds = {};
 
   // Applications state
   bool _isLoadingApps = true;
@@ -79,14 +81,67 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
             _allOpportunities = list;
             _isLoadingOpps = false;
           });
-          _applyFilters();
         }
       }
+
+      // Fetch saved opportunities
+      try {
+        final savedRes = await _apiService.getSavedOpportunities();
+        if (savedRes.statusCode == 200 && savedRes.data['data'] != null) {
+          final savedList = (savedRes.data['data'] as List?) ?? [];
+          final ids = savedList.map<int>((s) => (s['opportunityId'] as int)).toSet();
+          if (mounted) {
+            setState(() {
+              _savedOpportunityIds = ids;
+            });
+          }
+        }
+      } catch (_) {}
+
+      if (mounted) _applyFilters();
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoadingOpps = false;
           _oppsError = 'Failed to load opportunities';
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleSaveOpportunity(int id) async {
+    final wasSaved = _savedOpportunityIds.contains(id);
+    setState(() {
+      if (wasSaved) {
+        _savedOpportunityIds.remove(id);
+      } else {
+        _savedOpportunityIds.add(id);
+      }
+      _applyFilters();
+    });
+
+    try {
+      final res = await _apiService.toggleSaveOpportunity(id);
+      if (mounted) {
+        final isSaved = res.data['saved'] == true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isSaved ? 'Opportunity saved to bookmarks' : 'Removed from bookmarks'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: isSaved ? const Color(0xFF4F46E5) : const Color(0xFF64748B),
+          ),
+        );
+      }
+    } catch (e) {
+      // Revert if error
+      if (mounted) {
+        setState(() {
+          if (wasSaved) {
+            _savedOpportunityIds.add(id);
+          } else {
+            _savedOpportunityIds.remove(id);
+          }
+          _applyFilters();
         });
       }
     }
@@ -132,6 +187,10 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
             .map((s) => s.toLowerCase())
             .join(' ');
 
+        final oppId = opp['id'] is int
+            ? opp['id'] as int
+            : int.tryParse(opp['id'].toString()) ?? 0;
+
         // Keyword query
         final matchesQuery = query.isEmpty ||
             title.contains(query) ||
@@ -146,7 +205,10 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
         final matchesWorkMode = _selectedWorkModeFilter == 'All' ||
             workMode.contains(_selectedWorkModeFilter.toLowerCase());
 
-        return matchesQuery && matchesType && matchesWorkMode;
+        // Saved filter
+        final matchesSaved = !_showOnlySaved || _savedOpportunityIds.contains(oppId);
+
+        return matchesQuery && matchesType && matchesWorkMode && matchesSaved;
       }).toList();
     });
   }
@@ -303,6 +365,35 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
                         setState(() => _selectedWorkModeFilter = val);
                         _applyFilters();
                       }),
+                      const SizedBox(width: 8),
+                      Container(height: 20, width: 1, color: const Color(0xFFCBD5E1)),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        avatar: Icon(
+                          _showOnlySaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                          size: 14,
+                          color: _showOnlySaved ? Colors.white : const Color(0xFF4F46E5),
+                        ),
+                        label: Text('Saved (${_savedOpportunityIds.length})'),
+                        selected: _showOnlySaved,
+                        onSelected: (val) {
+                          setState(() => _showOnlySaved = val);
+                          _applyFilters();
+                        },
+                        selectedColor: const Color(0xFF4F46E5),
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        labelStyle: TextStyle(
+                          color: _showOnlySaved ? Colors.white : const Color(0xFF4F46E5),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                        visualDensity: VisualDensity.compact,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        side: BorderSide(
+                          color: _showOnlySaved ? const Color(0xFF4F46E5) : const Color(0xFFC7D2FE),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -400,7 +491,16 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
       itemCount: _filteredOpportunities.length,
       itemBuilder: (context, index) {
         final opportunity = _filteredOpportunities[index];
-        return _OpportunityCard(opportunity: opportunity);
+        final oppId = opportunity['id'] is int
+            ? opportunity['id'] as int
+            : int.tryParse(opportunity['id'].toString()) ?? 0;
+        final isSaved = _savedOpportunityIds.contains(oppId);
+
+        return _OpportunityCard(
+          opportunity: opportunity,
+          isSaved: isSaved,
+          onToggleSave: () => _toggleSaveOpportunity(oppId),
+        );
       },
     );
   }
@@ -665,9 +765,13 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
 
 class _OpportunityCard extends StatelessWidget {
   final dynamic opportunity;
+  final bool isSaved;
+  final VoidCallback onToggleSave;
 
   const _OpportunityCard({
     required this.opportunity,
+    required this.isSaved,
+    required this.onToggleSave,
   });
 
   String _formatCurrency(dynamic val) {
@@ -725,7 +829,7 @@ class _OpportunityCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title + Arrow
+                // Title + Bookmark + Arrow
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -739,7 +843,22 @@ class _OpportunityCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF94A3B8)),
+                    IconButton(
+                      icon: Icon(
+                        isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        color: isSaved ? const Color(0xFF4F46E5) : const Color(0xFF94A3B8),
+                        size: 22,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      tooltip: isSaved ? 'Remove bookmark' : 'Save opportunity',
+                      onPressed: onToggleSave,
+                    ),
+                    const SizedBox(width: 8),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(Icons.arrow_forward_ios, size: 13, color: Color(0xFF94A3B8)),
+                    ),
                   ],
                 ),
 

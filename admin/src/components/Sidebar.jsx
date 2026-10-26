@@ -1,14 +1,14 @@
-import React from 'react';
 import { 
   LayoutDashboard, 
   Users, 
   Building2, 
   Briefcase, 
   LogOut, 
-  ShieldCheck 
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, pendingCount, user, onLogout }) {
+export default function Sidebar({ activeTab, setActiveTab, pendingCount, reportsCount, user, onLogout }) {
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'users', label: 'Users Management', icon: Users },
@@ -20,6 +20,12 @@ export default function Sidebar({ activeTab, setActiveTab, pendingCount, user, o
     },
     { id: 'opportunities', label: 'Opportunities', icon: Briefcase },
     { id: 'applications', label: 'Candidate Applications', icon: ShieldCheck },
+    { 
+      id: 'moderation', 
+      label: 'Safety Moderation', 
+      icon: AlertTriangle, 
+      badge: reportsCount > 0 ? reportsCount : null 
+    },
   ];
 
   return (

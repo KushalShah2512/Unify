@@ -251,6 +251,66 @@ const deleteOpportunity = async (req, res) => {
   }
 };
 
+// Update opportunity
+const updateOpportunity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      description,
+      type,
+      companyName,
+      location,
+      workMode,
+      stipend,
+      salary,
+      applicationUrl,
+      requiredSkills,
+    } = req.body;
+
+    const existing = await prisma.opportunity.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        status: "error",
+        message: "Opportunity not found",
+      });
+    }
+
+    const updated = await prisma.opportunity.update({
+      where: { id: Number(id) },
+      data: {
+        ...(title !== undefined && { title }),
+        ...(description !== undefined && { description }),
+        ...(type !== undefined && { type }),
+        ...(companyName !== undefined && { companyName }),
+        ...(location !== undefined && { location }),
+        ...(workMode !== undefined && { workMode }),
+        ...(stipend !== undefined && { stipend }),
+        ...(salary !== undefined && { salary }),
+        ...(applicationUrl !== undefined && { applicationUrl }),
+        ...(requiredSkills !== undefined && {
+          requiredSkills: Array.isArray(requiredSkills) ? requiredSkills : [],
+        }),
+      },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Opportunity updated successfully",
+      opportunity: updated,
+    });
+  } catch (error) {
+    console.error("Update opportunity error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to update opportunity",
+    });
+  }
+};
+
 // Get all student opportunity applications
 const getAllApplications = async (req, res) => {
   try {
@@ -299,7 +359,32 @@ const updateApplicationStatus = async (req, res) => {
     const updated = await prisma.application.update({
       where: { id: Number(id) },
       data: { status },
+      include: {
+        student: { select: { userId: true, fullName: true } },
+        opportunity: { select: { title: true, companyName: true } },
+      },
     });
+
+    // Automatically send notification to student
+    try {
+      const statusTitle =
+        status === "ACCEPTED"
+          ? "🎉 Offer / Accepted!"
+          : status === "SHORTLISTED"
+          ? "🌟 Application Shortlisted!"
+          : status === "REJECTED"
+          ? "Application Update"
+          : "Application Under Review";
+
+      await prisma.notification.create({
+        data: {
+          userId: updated.student.userId,
+          title: statusTitle,
+          message: `Your application for "${updated.opportunity.title}" at ${updated.opportunity.companyName} has moved to ${status}.`,
+          type: "APPLICATION",
+        },
+      });
+    } catch (_) {}
 
     return res.status(200).json({
       status: "success",
@@ -315,6 +400,94 @@ const updateApplicationStatus = async (req, res) => {
   }
 };
 
+// Verify student's uploaded resume document
+const verifyStudentResume = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { isVerified = true } = req.body;
+
+    const student = await prisma.studentProfile.update({
+      where: { id: Number(studentId) },
+      data: { isResumeVerified: Boolean(isVerified) },
+      select: { userId: true, fullName: true, resumeName: true },
+    });
+
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: student.userId,
+          title: isVerified ? "✅ Resume Verified by Admin" : "Resume Verification Update",
+          message: isVerified
+            ? `Your uploaded resume "${student.resumeName || 'document'}" has been reviewed and verified by Unify Admin.`
+            : "Your resume verification status has been updated.",
+          type: "SYSTEM",
+        },
+      });
+    } catch (_) {}
+
+    return res.status(200).json({
+      status: "success",
+      message: `Student resume marked as ${isVerified ? "Verified" : "Unverified"}`,
+      student,
+    });
+  } catch (error) {
+    console.error("Verify student resume error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to update resume verification status",
+    });
+  }
+};
+
+// Get all reported opportunities
+const getAllReports = async (req, res) => {
+  try {
+    const reports = await prisma.opportunityReport.findMany({
+      include: {
+        opportunity: true,
+        student: { select: { fullName: true, user: { select: { email: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      reports,
+    });
+  } catch (error) {
+    console.error("Get reports error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to fetch reports",
+    });
+  }
+};
+
+// Resolve or dismiss report
+const resolveReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status = "RESOLVED" } = req.body;
+
+    const report = await prisma.opportunityReport.update({
+      where: { id: Number(id) },
+      data: { status },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: `Report marked as ${status}`,
+      report,
+    });
+  } catch (error) {
+    console.error("Resolve report error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to update report",
+    });
+  }
+};
+
 module.exports = {
   getPlatformStats,
   getAllUsers,
@@ -322,7 +495,11 @@ module.exports = {
   updateEmployerVerification,
   getAllOpportunities,
   createOpportunity,
+  updateOpportunity,
   deleteOpportunity,
   getAllApplications,
   updateApplicationStatus,
+  verifyStudentResume,
+  getAllReports,
+  resolveReport,
 };

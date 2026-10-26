@@ -135,8 +135,183 @@ const getMyApplications = async (req, res) => {
   }
 };
 
+// ==========================================
+// Toggle Save / Bookmark Opportunity
+// ==========================================
+const toggleSaveOpportunity = async (req, res) => {
+  try {
+    const opportunityId = Number(req.params.id);
+
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { userId: req.user.userId },
+    });
+
+    if (!studentProfile) {
+      return res.status(404).json({
+        status: "error",
+        message: "Student profile not found",
+      });
+    }
+
+    const existing = await prisma.savedOpportunity.findUnique({
+      where: {
+        studentId_opportunityId: {
+          studentId: studentProfile.id,
+          opportunityId,
+        },
+      },
+    });
+
+    if (existing) {
+      await prisma.savedOpportunity.delete({
+        where: { id: existing.id },
+      });
+
+      return res.status(200).json({
+        status: "success",
+        isSaved: false,
+        message: "Opportunity removed from saved bookmarks",
+      });
+    }
+
+    await prisma.savedOpportunity.create({
+      data: {
+        studentId: studentProfile.id,
+        opportunityId,
+      },
+    });
+
+    return res.status(201).json({
+      status: "success",
+      isSaved: true,
+      message: "Opportunity saved to bookmarks",
+    });
+  } catch (error) {
+    console.error("Toggle save opportunity error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to update saved status",
+    });
+  }
+};
+
+// ==========================================
+// Get All Saved / Bookmarked Opportunities
+// ==========================================
+const getSavedOpportunities = async (req, res) => {
+  try {
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { userId: req.user.userId },
+    });
+
+    if (!studentProfile) {
+      return res.status(404).json({
+        status: "error",
+        message: "Student profile not found",
+      });
+    }
+
+    const saved = await prisma.savedOpportunity.findMany({
+      where: { studentId: studentProfile.id },
+      include: {
+        opportunity: true,
+      },
+      orderBy: { savedAt: "desc" },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      savedOpportunities: saved.map((s) => ({
+        ...s.opportunity,
+        savedAt: s.savedAt,
+      })),
+    });
+  } catch (error) {
+    console.error("Get saved opportunities error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to retrieve saved opportunities",
+    });
+  }
+};
+
+// ==========================================
+// Report Suspicious / Fraudulent Opportunity
+// ==========================================
+const reportOpportunity = async (req, res) => {
+  try {
+    const opportunityId = Number(req.params.id);
+    const { reason, details } = req.body;
+
+    if (!reason || reason.trim() === "") {
+      return res.status(400).json({
+        status: "error",
+        message: "Please specify a reason for reporting this listing",
+      });
+    }
+
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { userId: req.user.userId },
+    });
+
+    if (!studentProfile) {
+      return res.status(404).json({
+        status: "error",
+        message: "Student profile not found",
+      });
+    }
+
+    const opportunity = await prisma.opportunity.findUnique({
+      where: { id: opportunityId },
+    });
+
+    if (!opportunity) {
+      return res.status(404).json({
+        status: "error",
+        message: "Opportunity not found",
+      });
+    }
+
+    const report = await prisma.opportunityReport.create({
+      data: {
+        opportunityId,
+        studentId: studentProfile.id,
+        reason: reason.trim(),
+        details: details ? details.trim() : null,
+      },
+    });
+
+    // Notify student that report is being investigated
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: req.user.userId,
+          title: "Safety Report Logged",
+          message: `Your report on "${opportunity.title}" at ${opportunity.companyName} has been received. Our moderation team is investigating.`,
+          type: "SYSTEM",
+        },
+      });
+    } catch (_) {}
+
+    return res.status(201).json({
+      status: "success",
+      message: "Thank you for helping keep Unify safe. The listing has been flagged for admin review.",
+      report,
+    });
+  } catch (error) {
+    console.error("Report opportunity error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to submit opportunity report",
+    });
+  }
+};
+
 module.exports = {
   getOpportunities,
   applyToOpportunity,
   getMyApplications,
+  toggleSaveOpportunity,
+  getSavedOpportunities,
+  reportOpportunity,
 };

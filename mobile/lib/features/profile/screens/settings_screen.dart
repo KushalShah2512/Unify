@@ -25,11 +25,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Change Password',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -38,12 +39,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextField(
                 controller: currentPasswordController,
                 obscureText: true,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Color(0xFF0F172A)),
                 decoration: const InputDecoration(
                   labelText: 'Current Password',
-                  labelStyle: TextStyle(color: Color(0xFF94A3B8)),
+                  labelStyle: TextStyle(color: Color(0xFF64748B)),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF334155)),
+                    borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                   ),
                 ),
               ),
@@ -51,12 +52,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextField(
                 controller: newPasswordController,
                 obscureText: true,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Color(0xFF0F172A)),
                 decoration: const InputDecoration(
                   labelText: 'New Password',
-                  labelStyle: TextStyle(color: Color(0xFF94A3B8)),
+                  labelStyle: TextStyle(color: Color(0xFF64748B)),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF334155)),
+                    borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                   ),
                 ),
               ),
@@ -64,12 +65,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextField(
                 controller: confirmPasswordController,
                 obscureText: true,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Color(0xFF0F172A)),
                 decoration: const InputDecoration(
                   labelText: 'Confirm New Password',
-                  labelStyle: TextStyle(color: Color(0xFF94A3B8)),
+                  labelStyle: TextStyle(color: Color(0xFF64748B)),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF334155)),
+                    borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                   ),
                 ),
               ),
@@ -79,7 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF94A3B8))),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -92,9 +93,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6366F1),
+              backgroundColor: const Color(0xFF4F46E5),
+              foregroundColor: Colors.white,
             ),
-            child: const Text('Update', style: TextStyle(color: Colors.white)),
+            child: const Text('Update Password'),
           ),
         ],
       ),
@@ -105,17 +107,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear App Cache', style: TextStyle(color: Colors.white)),
+        title: const Text('Clear App Cache', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
         content: const Text(
           'This will clear offline cached files and temporary data. You will remain logged in.',
-          style: TextStyle(color: Color(0xFFCBD5E1)),
+          style: TextStyle(color: Color(0xFF475569)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF94A3B8))),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -127,8 +130,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
-            child: const Text('Clear Cache', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4F46E5),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Clear Cache'),
           ),
         ],
       ),
@@ -139,17 +145,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Confirm Logout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Confirm Logout', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
         content: const Text(
           'Are you sure you want to sign out of your Unify account?',
-          style: TextStyle(color: Color(0xFFCBD5E1)),
+          style: TextStyle(color: Color(0xFF475569)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF94A3B8))),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -159,8 +166,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
             ),
-            child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+            child: const Text('Sign Out'),
           ),
         ],
       ),
@@ -170,16 +178,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: Colors.white,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: const Text(
           'Settings & Preferences',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1E293B), size: 18),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -263,7 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Unify Student Support: support@unify.edu'),
-                    backgroundColor: Color(0xFF6366F1),
+                    backgroundColor: Color(0xFF4F46E5),
                   ),
                 );
               },
@@ -277,7 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Unify complies with standard student data privacy standards.'),
-                    backgroundColor: Color(0xFF6366F1),
+                    backgroundColor: Color(0xFF4F46E5),
                   ),
                 );
               },
@@ -287,13 +296,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF334155),
+                  color: const Color(0xFFEEF2FF),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.info_outline, color: Color(0xFF818CF8), size: 20),
+                child: const Icon(Icons.info_outline, color: Color(0xFF4F46E5), size: 20),
               ),
-              title: const Text('App Version', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-              subtitle: const Text('Unify Mobile v1.2.0 (Build 2026.10)', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+              title: const Text('App Version', style: TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: const Text('Unify Mobile v1.2.0 (Build 2026.10)', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
             ),
           ]),
 
@@ -325,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         title.toUpperCase(),
         style: const TextStyle(
-          color: Color(0xFF818CF8),
+          color: Color(0xFF475569),
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.8,
@@ -337,9 +346,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSettingsCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF334155)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(children: children),
     );
@@ -355,18 +371,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SwitchListTile(
       value: value,
       onChanged: onChanged,
-      activeColor: const Color(0xFF6366F1),
+      activeThumbColor: const Color(0xFF4F46E5),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       secondary: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFF334155),
+          color: const Color(0xFFEEF2FF),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: const Color(0xFF818CF8), size: 20),
+        child: Icon(icon, color: const Color(0xFF4F46E5), size: 20),
       ),
-      title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+      title: Text(title, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle, style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
     );
   }
 
@@ -382,18 +398,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFF334155),
+          color: const Color(0xFFEEF2FF),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: const Color(0xFF818CF8), size: 20),
+        child: Icon(icon, color: const Color(0xFF4F46E5), size: 20),
       ),
-      title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
-      trailing: const Icon(Icons.arrow_forward_ios, color: Color(0xFF64748B), size: 14),
+      title: Text(title, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle, style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+      trailing: const Icon(Icons.arrow_forward_ios, color: Color(0xFF94A3B8), size: 14),
     );
   }
 
   Widget _buildDivider() {
-    return const Divider(height: 1, color: Color(0xFF334155), indent: 56);
+    return const Divider(height: 1, color: Color(0xFFF1F5F9), indent: 56);
   }
 }

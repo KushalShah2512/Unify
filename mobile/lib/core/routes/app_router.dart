@@ -21,6 +21,8 @@ import 'package:unify/features/auth/presentation/screens/forgot_password_screen.
 import 'package:unify/features/ai/screens/ai_career_assistant_screen.dart';
 import 'package:unify/features/ai/screens/ats_resume_checker_screen.dart';
 import 'package:unify/features/profile/screens/settings_screen.dart';
+import 'package:unify/features/notifications/screens/notifications_screen.dart';
+import 'package:unify/features/profile/screens/resume_manager_screen.dart';
 
 import 'route_names.dart';
 
@@ -145,6 +147,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.settings,
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: RouteNames.notifications,
+      builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      path: RouteNames.resumeManager,
+      builder: (context, state) => const ResumeManagerScreen(),
     ),
   ],
 );

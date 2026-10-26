@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Briefcase, Plus, Trash2, MapPin, DollarSign, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Briefcase, Plus, Trash2, MapPin, DollarSign, X, Edit2 } from 'lucide-react';
 
-export default function OpportunitiesTab({ opportunities, onCreate, onDelete, loading }) {
+export default function OpportunitiesTab({ opportunities, onCreate, onUpdate, onDelete, loading }) {
   const [showModal, setShowModal] = useState(false);
+  const [editingOpp, setEditingOpp] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     type: 'Internship',
@@ -10,23 +12,13 @@ export default function OpportunitiesTab({ opportunities, onCreate, onDelete, lo
     location: '',
     workMode: 'Remote',
     stipend: '',
+    applicationUrl: '',
     requiredSkills: '',
     description: '',
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const skillsArray = formData.requiredSkills
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    onCreate({
-      ...formData,
-      requiredSkills: skillsArray,
-    });
-
-    setShowModal(false);
+  const handleOpenCreate = () => {
+    setEditingOpp(null);
     setFormData({
       title: '',
       type: 'Internship',
@@ -34,133 +26,197 @@ export default function OpportunitiesTab({ opportunities, onCreate, onDelete, lo
       location: '',
       workMode: 'Remote',
       stipend: '',
+      applicationUrl: '',
       requiredSkills: '',
       description: '',
     });
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (opp) => {
+    setEditingOpp(opp);
+    setFormData({
+      title: opp.title || '',
+      type: opp.type || 'Internship',
+      companyName: opp.companyName || '',
+      location: opp.location || '',
+      workMode: opp.workMode || 'Remote',
+      stipend: opp.stipend || opp.salary || '',
+      applicationUrl: opp.applicationUrl || '',
+      requiredSkills: Array.isArray(opp.requiredSkills) ? opp.requiredSkills.join(', ') : '',
+      description: opp.description || '',
+    });
+    setShowModal(true);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const skillsArray = (formData.requiredSkills || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const payload = {
+      ...formData,
+      requiredSkills: skillsArray,
+    };
+
+    if (editingOpp) {
+      if (onUpdate) onUpdate(editingOpp.id, payload);
+    } else {
+      if (onCreate) onCreate(payload);
+    }
+
+    setShowModal(false);
+    setEditingOpp(null);
   };
 
   return (
-    <div className="panel">
-      <div className="panel-header">
-        <div className="panel-title">
-          <h2>Opportunity Listings ({opportunities?.length || 0})</h2>
-          <p>Internships, full-time jobs, and career programs published on Unify</p>
+    <>
+      <div className="panel">
+        <div className="panel-header">
+          <div className="panel-title">
+            <h2>Opportunity Listings ({opportunities?.length || 0})</h2>
+            <p>Internships, full-time jobs, and career programs published on Unify</p>
+          </div>
+
+          <div className="table-controls">
+            <button 
+              className="btn btn-primary"
+              onClick={handleOpenCreate}
+            >
+              <Plus size={16} />
+              <span>Add Opportunity</span>
+            </button>
+          </div>
         </div>
 
-        <button 
-          className="btn btn-primary"
-          onClick={() => setShowModal(true)}
-        >
-          <Plus size={16} /> Add Opportunity
-        </button>
-      </div>
-
-      <div className="data-table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Role / Title</th>
-              <th>Company</th>
-              <th>Type</th>
-              <th>Mode & Location</th>
-              <th>Stipend / Salary</th>
-              <th>Required Skills</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+        <div className="data-table-container">
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '36px' }}>
-                  Loading opportunities...
-                </td>
+                <th>Opportunity Title</th>
+                <th>Company</th>
+                <th>Type</th>
+                <th>Mode & Location</th>
+                <th>Stipend / Salary</th>
+                <th>Required Skills</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
-            ) : opportunities && opportunities.length > 0 ? (
-              opportunities.map((opp) => (
-                <tr key={opp.id}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Briefcase size={16} color="#818cf8" />
-                      <strong style={{ color: '#fff' }}>{opp.title}</strong>
-                    </div>
-                  </td>
-                  <td>{opp.companyName}</td>
-                  <td>
-                    <span 
-                      className="badge" 
-                      style={{ 
-                        background: opp.type === 'Internship' ? 'rgba(6, 182, 212, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                        color: opp.type === 'Internship' ? '#22d3ee' : '#818cf8',
-                        border: '1px solid rgba(255,255,255,0.1)'
-                      }}
-                    >
-                      {opp.type}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <MapPin size={12} color="#64748b" />
-                      <span>{opp.workMode || 'Remote'} {opp.location ? `• ${opp.location}` : ''}</span>
-                    </div>
-                  </td>
-                  <td>{opp.stipend || opp.salary || 'Unpaid / Undisclosed'}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', maxWidth: '240px' }}>
-                      {(opp.requiredSkills || []).slice(0, 4).map((s, idx) => (
-                        <span 
-                          key={idx}
-                          style={{
-                            background: 'rgba(255,255,255,0.06)',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            color: '#cbd5e1'
-                          }}
-                        >
-                          {s}
-                        </span>
-                      ))}
-                      {(opp.requiredSkills || []).length > 4 && (
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>
-                          +{(opp.requiredSkills || []).length - 4}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button 
-                      className="btn btn-danger"
-                      style={{ padding: '6px 10px', fontSize: '12px' }}
-                      onClick={() => onDelete(opp.id)}
-                      title="Delete opportunity"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '36px' }}>
+                    Loading opportunities...
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '36px' }}>
-                  No opportunities currently created. Click "Add Opportunity" above.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              ) : opportunities && opportunities.length > 0 ? (
+                opportunities.map((opp) => (
+                  <tr key={opp.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Briefcase size={16} color="#818cf8" />
+                        <strong style={{ color: '#fff' }}>{opp.title}</strong>
+                      </div>
+                    </td>
+                    <td>{opp.companyName}</td>
+                    <td>
+                      <span 
+                        className="badge" 
+                        style={{ 
+                          background: opp.type === 'Internship' ? 'rgba(6, 182, 212, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                          color: opp.type === 'Internship' ? '#22d3ee' : '#818cf8',
+                          border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        {opp.type}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPin size={12} color="#64748b" />
+                        <span>{opp.workMode || 'Remote'} {opp.location ? `• ${opp.location}` : ''}</span>
+                      </div>
+                    </td>
+                    <td>{opp.stipend || opp.salary || 'Unpaid / Undisclosed'}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', maxWidth: '240px' }}>
+                        {(opp.requiredSkills || []).slice(0, 4).map((s, idx) => (
+                          <span 
+                            key={idx}
+                            style={{
+                              background: 'rgba(255,255,255,0.06)',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              color: '#cbd5e1'
+                            }}
+                          >
+                            {s}
+                          </span>
+                        ))}
+                        {(opp.requiredSkills || []).length > 4 && (
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>
+                            +{(opp.requiredSkills || []).length - 4}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <button 
+                          className="btn btn-secondary"
+                          style={{ padding: '6px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          onClick={() => handleOpenEdit(opp)}
+                          title="Edit opportunity details"
+                        >
+                          <Edit2 size={13} />
+                          <span>Edit</span>
+                        </button>
+                        <button 
+                          className="btn btn-danger"
+                          style={{ padding: '6px 10px', fontSize: '12px' }}
+                          onClick={() => onDelete(opp.id)}
+                          title="Delete opportunity"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                    No opportunities currently created. Click "Add Opportunity" above.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Modal for creating opportunity */}
-      {showModal && (
+      {/* Modal for creating or editing opportunity */}
+      {showModal && typeof document !== 'undefined' && createPortal(
         <div className="modal-backdrop" onClick={() => setShowModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>
-                Add New Career Opportunity
-              </h3>
+              <div>
+                <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: '700', margin: 0 }}>
+                  {editingOpp ? 'Edit Career Opportunity' : 'Add New Career Opportunity'}
+                </h3>
+                <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '12px' }}>
+                  {editingOpp 
+                    ? `Modifying Listing #${editingOpp.id} • ${editingOpp.companyName}` 
+                    : 'Publish an internship or job for campus students'}
+                </p>
+              </div>
               <button 
                 onClick={() => setShowModal(false)}
-                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                className="icon-button"
+                title="Close"
               >
                 <X size={20} />
               </button>
@@ -234,15 +290,28 @@ export default function OpportunitiesTab({ opportunities, onCreate, onDelete, lo
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Salary / Stipend</label>
-                  <input 
-                    type="text" 
-                    className="form-control"
-                    placeholder="e.g. ₹25,000 / month or ₹8-12 LPA"
-                    value={formData.stipend}
-                    onChange={(e) => setFormData({ ...formData, stipend: e.target.value })}
-                  />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="form-group">
+                    <label>Salary / Stipend</label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      placeholder="e.g. ₹25,000 / month or ₹8-12 LPA"
+                      value={formData.stipend}
+                      onChange={(e) => setFormData({ ...formData, stipend: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Application / External URL</label>
+                    <input 
+                      type="url" 
+                      className="form-control"
+                      placeholder="https://company.com/apply"
+                      value={formData.applicationUrl}
+                      onChange={(e) => setFormData({ ...formData, applicationUrl: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -269,7 +338,7 @@ export default function OpportunitiesTab({ opportunities, onCreate, onDelete, lo
                 </div>
               </div>
 
-              <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <div className="modal-footer">
                 <button 
                   type="button" 
                   className="btn btn-secondary"
@@ -281,13 +350,14 @@ export default function OpportunitiesTab({ opportunities, onCreate, onDelete, lo
                   type="submit" 
                   className="btn btn-primary"
                 >
-                  Publish Opportunity
+                  {editingOpp ? 'Save Changes' : 'Publish Opportunity'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }

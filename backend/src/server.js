@@ -23,12 +23,18 @@ const educationRoutes = require("./routes/education_routes");
 
 const opportunityRoutes = require("./routes/opportunity_routes");
 
+const path = require("path");
 const aiRoutes = require("./routes/ai_routes");
 const adminRoutes = require("./routes/admin_routes");
+const notificationRoutes = require("./routes/notification_routes");
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Serve uploaded documents statically
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 app.use("/api/auth", authRoutes);
 
 app.use("/api/students", studentRoutes);
@@ -42,6 +48,7 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/opportunities", opportunityRoutes);
 app.use("/api/employers", employerRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
 // ====================
 // Basic Routes
 // ====================

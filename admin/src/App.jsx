@@ -5,6 +5,7 @@ import UsersTab from './components/UsersTab';
 import EmployersTab from './components/EmployersTab';
 import OpportunitiesTab from './components/OpportunitiesTab';
 import ApplicationsTab from './components/ApplicationsTab';
+import ModerationTab from './components/ModerationTab';
 import LoginView from './components/LoginView';
 import { api } from './api';
 import { RefreshCw, CheckCircle } from 'lucide-react';
@@ -23,6 +24,7 @@ export default function App() {
   const [employers, setEmployers] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [reports, setReports] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
@@ -70,12 +72,13 @@ export default function App() {
     if (!token) return;
     try {
       setLoading(true);
-      const [statsRes, usersRes, employersRes, oppsRes, appsRes] = await Promise.all([
+      const [statsRes, usersRes, employersRes, oppsRes, appsRes, reportsRes] = await Promise.all([
         api.getStats().catch(() => null),
         api.getUsers().catch(() => null),
         api.getEmployers().catch(() => null),
         api.getOpportunities().catch(() => null),
         api.getApplications().catch(() => null),
+        api.getReports().catch(() => null),
       ]);
 
       if (statsRes?.stats) {
@@ -86,6 +89,7 @@ export default function App() {
       if (employersRes?.employers) setEmployers(employersRes.employers);
       if (oppsRes?.opportunities) setOpportunities(oppsRes.opportunities);
       if (appsRes?.applications) setApplications(appsRes.applications);
+      if (reportsRes?.reports) setReports(reportsRes.reports);
     } catch (err) {
       console.error('Fetch data error:', err);
     } finally {
@@ -121,6 +125,17 @@ export default function App() {
     }
   };
 
+  // Opportunity update action
+  const handleUpdateOpportunity = async (id, data) => {
+    try {
+      await api.updateOpportunity(id, data);
+      showToast('Opportunity updated successfully');
+      fetchData();
+    } catch (err) {
+      showToast(err.message || 'Failed to update opportunity');
+    }
+  };
+
   // Opportunity delete action
   const handleDeleteOpportunity = async (id) => {
     if (!window.confirm('Are you sure you want to delete this opportunity?')) return;
@@ -144,6 +159,28 @@ export default function App() {
     }
   };
 
+  // Candidate Resume Verification action
+  const handleVerifyResume = async (studentId, isVerified) => {
+    try {
+      await api.verifyStudentResume(studentId, isVerified);
+      showToast(isVerified ? 'Candidate resume verified successfully!' : 'Resume marked as unverified');
+      fetchData();
+    } catch (err) {
+      showToast(err.message || 'Failed to update resume verification');
+    }
+  };
+
+  // Moderation Report action
+  const handleResolveReport = async (id, status) => {
+    try {
+      await api.resolveReport(id, status);
+      showToast(`Report marked as ${status.toLowerCase()}`);
+      fetchData();
+    } catch (err) {
+      showToast(err.message || 'Failed to update report');
+    }
+  };
+
   if (!token) {
     return (
       <LoginView 
@@ -160,7 +197,10 @@ export default function App() {
     employers: 'Organization Verifications',
     opportunities: 'Opportunities & Job Portal',
     applications: 'Candidate Application Pipeline',
+    moderation: 'Job Safety & Fraud Listing Moderation',
   };
+
+  const pendingReportsCount = reports.filter((r) => r.status === 'PENDING').length;
 
   return (
     <div className="admin-layout">
@@ -169,6 +209,7 @@ export default function App() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         pendingCount={stats?.pendingEmployers || 0}
+        reportsCount={pendingReportsCount}
         user={user}
         onLogout={handleLogout}
       />
@@ -225,6 +266,7 @@ export default function App() {
             <OpportunitiesTab 
               opportunities={opportunities} 
               onCreate={handleCreateOpportunity}
+              onUpdate={handleUpdateOpportunity}
               onDelete={handleDeleteOpportunity}
               loading={loading}
             />
@@ -234,6 +276,16 @@ export default function App() {
             <ApplicationsTab 
               applications={applications}
               onUpdateStatus={handleUpdateApplicationStatus}
+              onVerifyResume={handleVerifyResume}
+              loading={loading}
+            />
+          )}
+
+          {activeTab === 'moderation' && (
+            <ModerationTab 
+              reports={reports}
+              onResolveReport={handleResolveReport}
+              onDeleteOpportunity={handleDeleteOpportunity}
               loading={loading}
             />
           )}

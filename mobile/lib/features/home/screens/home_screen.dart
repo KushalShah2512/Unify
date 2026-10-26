@@ -24,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _projectsCount = 0;
   int _certificationsCount = 0;
   int _applicationsCount = 0;
+  int _unreadNotificationsCount = 0;
 
   List<Map<String, dynamic>> _recommendedOpportunities = [];
 
@@ -119,6 +120,20 @@ class _HomeScreenState extends State<HomeScreen> {
           if (mounted) {
             setState(() {
               _recommendedOpportunities = opps.take(3).cast<Map<String, dynamic>>().toList();
+            });
+          }
+        }
+      } catch (_) {}
+
+      // 4. Fetch Notifications Count
+      try {
+        final notifRes = await _apiService.getNotifications();
+        if (notifRes.statusCode == 200 && notifRes.data['data'] != null) {
+          final list = (notifRes.data['data'] as List?) ?? [];
+          final unread = list.where((item) => item['isRead'] == false).length;
+          if (mounted) {
+            setState(() {
+              _unreadNotificationsCount = unread;
             });
           }
         }
@@ -223,6 +238,48 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Notifications',
+            onPressed: () async {
+              await context.push(RouteNames.notifications);
+              _loadDashboardData();
+            },
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(
+                  Icons.notifications_none_rounded,
+                  color: Color(0xFF475569),
+                  size: 26,
+                ),
+                if (_unreadNotificationsCount > 0)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEF4444),
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           IconButton(
             tooltip: 'View Profile',
             onPressed: () => context.push(RouteNames.profile),

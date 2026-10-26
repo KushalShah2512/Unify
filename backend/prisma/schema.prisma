@@ -20,6 +20,7 @@ model User {
 
   studentProfile  StudentProfile?
   employerProfile EmployerProfile?
+  notifications   Notification[]
 }
 
 model StudentProfile {
@@ -33,13 +34,21 @@ model StudentProfile {
   careerGoal   String?
   availability String?
 
+  resumeUrl          String?
+  resumeName         String?
+  resumeSize         Int?
+  resumeUpdatedAt    DateTime?
+  isResumeVerified   Boolean   @default(false)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  skills            Skill[]
-  projects          Project[]
-  certifications    Certification[]
-  educationRecords  Education[]
-  applications      Application[]
+  skills             Skill[]
+  projects           Project[]
+  certifications     Certification[]
+  educationRecords   Education[]
+  applications       Application[]
+  savedOpportunities SavedOpportunity[]
+  opportunityReports OpportunityReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -144,11 +153,13 @@ model Opportunity {
   requiredSkills  String[]
   preferredSkills String?
   experience      String?
-  isActive        Boolean       @default(true)
+  isActive        Boolean              @default(true)
   applications    Application[]
+  savedBy         SavedOpportunity[]
+  reports         OpportunityReport[]
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 }
 
 model Application {
@@ -163,4 +174,41 @@ model Application {
   opportunity   Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, opportunityId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  type      String   @default("APPLICATION") // APPLICATION, JOB_MATCH, SYSTEM
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SavedOpportunity {
+  id            Int            @id @default(autoincrement())
+  studentId     Int
+  opportunityId Int
+  savedAt       DateTime       @default(now())
+
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, opportunityId])
+}
+
+model OpportunityReport {
+  id            Int            @id @default(autoincrement())
+  opportunityId Int
+  studentId     Int
+  reason        String
+  details       String?
+  status        String         @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt     DateTime       @default(now())
+
+  opportunity   Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }

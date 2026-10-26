@@ -78,6 +78,17 @@ export const api = {
     return data;
   },
 
+  async updateOpportunity(id, opportunityData) {
+    const res = await fetch(`${BASE_URL}/admin/opportunities/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(opportunityData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to update opportunity');
+    return data;
+  },
+
   async deleteOpportunity(id) {
     const res = await fetch(`${BASE_URL}/admin/opportunities/${id}`, {
       method: 'DELETE',
@@ -105,6 +116,37 @@ export const api = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Failed to update application status');
+    return data;
+  },
+
+  async verifyStudentResume(studentId, isVerified) {
+    const res = await fetch(`${BASE_URL}/admin/students/${studentId}/verify-resume`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ isVerified }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to update resume verification');
+    return data;
+  },
+
+  async getReports() {
+    const res = await fetch(`${BASE_URL}/admin/reports`, {
+      headers: getHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch reports');
+    return data;
+  },
+
+  async resolveReport(id, status) {
+    const res = await fetch(`${BASE_URL}/admin/reports/${id}/resolve`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to resolve report');
     return data;
   },
 };

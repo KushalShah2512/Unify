@@ -21,4 +21,6 @@ class RouteNames {
   static const aiAssistant = '/ai-assistant';
   static const atsChecker = '/ats-checker';
   static const settings = '/settings';
+  static const notifications = '/notifications';
+  static const resumeManager = '/resume-manager';
 }
