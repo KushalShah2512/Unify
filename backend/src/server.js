@@ -23,17 +23,32 @@ const educationRoutes = require("./routes/education_routes");
 
 const opportunityRoutes = require("./routes/opportunity_routes");
 
-const path = require("path");
+const { uploadRoot } = require("./config/uploads");
 const aiRoutes = require("./routes/ai_routes");
 const adminRoutes = require("./routes/admin_routes");
 const notificationRoutes = require("./routes/notification_routes");
 const app = express();
 
-app.use(cors());
+// Managed hosts sit behind a reverse proxy. This retains the original HTTPS
+// protocol when generating public file URLs.
+app.set("trust proxy", 1);
+
+const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:3000")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    // Requests without an Origin header include native mobile clients and health checks.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Origin not allowed by CORS"));
+  },
+}));
 app.use(express.json());
 
 // Serve uploaded documents statically
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads", express.static(uploadRoot));
 
 app.use("/api/auth", authRoutes);
 

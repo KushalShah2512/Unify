@@ -2,7 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:unify/core/services/storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.23.17.10:5000';
+  /// Set at build time, e.g. --dart-define=API_BASE_URL=https://api.example.com.
+  /// The fallback is only for local development.
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://10.23.17.10:5000',
+  );
 
   late final Dio dio;
 

@@ -17,6 +17,9 @@ import {
   ExternalLink 
 } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
+
 export default function ApplicationsTab({ applications, onUpdateStatus, onVerifyResume, loading }) {
   const [filter, setFilter] = useState('ALL');
   const [selectedApp, setSelectedApp] = useState(null);
@@ -275,7 +278,7 @@ export default function ApplicationsTab({ applications, onUpdateStatus, onVerify
                     
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <a 
-                        href={selectedApp.student.resumeUrl.startsWith('http') ? selectedApp.student.resumeUrl : `http://localhost:5000${selectedApp.student.resumeUrl}`}
+                        href={selectedApp.student.resumeUrl.startsWith('http') ? selectedApp.student.resumeUrl : `${API_ORIGIN}${selectedApp.student.resumeUrl}`}
                         target="_blank"
                         rel="noreferrer"
                         className="btn btn-secondary"

@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const { resumeUploadDir } = require("../config/uploads");
 
 const {
   createProfile,
@@ -19,7 +20,7 @@ const router = express.Router();
 // Multer storage for uploaded resume documents
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../../uploads/resumes"));
+    cb(null, resumeUploadDir);
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);

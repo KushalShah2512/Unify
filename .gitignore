@@ -1,0 +1,7 @@
+node_modules/
+.env
+.env.local
+.env.production
+# Runtime user documents must not be committed. Existing tracked files should be
+# removed from Git separately with: git rm --cached -r backend/uploads
+backend/uploads/

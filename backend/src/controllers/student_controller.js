@@ -196,9 +196,11 @@ const uploadResume = async (req, res) => {
       });
     }
 
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
     const host = req.get("host") || "localhost:5000";
     const protocol = req.protocol || "http";
-    const resumeUrl = `${protocol}://${host}/uploads/resumes/${req.file.filename}`;
+    const baseUrl = publicBaseUrl || `${protocol}://${host}`;
+    const resumeUrl = `${baseUrl}/uploads/resumes/${req.file.filename}`;
 
     const profile = await prisma.studentProfile.update({
       where: { userId: req.user.userId },
