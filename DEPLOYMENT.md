@@ -4,33 +4,33 @@ This repository has three deployable parts:
 
 | Part | Service | Repository root directory |
 | --- | --- | --- |
-| API | Railway | `backend` |
+| API | Render | `backend` |
 | Admin dashboard | Vercel | `admin` |
 | Flutter application | Google Play / App Store | `mobile` |
 
 Use a managed PostgreSQL database such as Neon. The database is used only by
-the Railway API; do not expose its connection string to Vercel or the mobile
+the Render API; do not expose its connection string to Vercel or the mobile
 app.
 
 ## 1. Create the database
 
 1. Create a Neon PostgreSQL project in the region closest to your users.
-2. Copy its pooled connection string.
-3. Keep the connection string private. It becomes the Railway `DATABASE_URL`
+2. Copy its direct connection string. A direct connection is the simplest
+   choice for this single long-running Render API and Prisma migrations.
+3. Keep the connection string private. It becomes the Render `DATABASE_URL`
    variable.
 
-## 2. Deploy the API on Railway
+## 2. Deploy the API on Render
 
 1. Push this repository to a private GitHub repository.
-2. In Railway, create a service from the repository and set **Root Directory**
+2. In Render, create a Node Web Service from the repository and set **Root Directory**
    to `backend`.
-3. Attach a Railway Volume and mount it at `/data`.
-4. Add the following Railway variables. Values in angle brackets must be
+3. Add the following Render variables. Values in angle brackets must be
    replaced; never commit them.
 
    ```text
    NODE_ENV=production
-   DATABASE_URL=<Neon pooled PostgreSQL connection string>
+   DATABASE_URL=<Neon direct PostgreSQL connection string>
    JWT_SECRET=<a newly generated 32+ character random secret>
    GEMINI_API_KEY=<Gemini API key>
    SMTP_HOST=smtp.gmail.com
@@ -39,14 +39,13 @@ app.
    SMTP_USER=<SMTP account>
    SMTP_PASSWORD=<new SMTP app password>
    MAIL_FROM="Unify <no-reply@your-domain.example>"
-   UPLOAD_DIR=/data
-   PUBLIC_BASE_URL=https://<your-railway-api-domain>
+   PUBLIC_BASE_URL=https://<your-render-api-domain>
    CORS_ORIGINS=https://<your-vercel-admin-domain>
    ```
 
-5. Deploy. `railway.json` installs dependencies, generates Prisma Client,
-   deploys database migrations, starts the API, and checks `/api/health`.
-6. Generate a public Railway domain, or map `api.your-domain.example` to the
+4. Configure the Build Command as `npm ci && npm run prisma:generate` and the
+   Start Command as `npm run prisma:migrate:deploy && npm start`, then deploy.
+5. Generate a public Render domain, or map `api.your-domain.example` to the
    service. Use that exact HTTPS address for `PUBLIC_BASE_URL`.
 
 For Vercel preview builds, temporarily add each preview origin to
@@ -59,11 +58,11 @@ For Vercel preview builds, temporarily add each preview origin to
 2. Add this Production environment variable:
 
    ```text
-   VITE_API_BASE_URL=https://<your-railway-api-domain>/api
+   VITE_API_BASE_URL=https://<your-render-api-domain>/api
    ```
 
 3. Deploy and copy the resulting `https://...vercel.app` URL.
-4. Add that URL to Railway's `CORS_ORIGINS`, then redeploy the API.
+4. Add that URL to Render's `CORS_ORIGINS`, then redeploy the API.
 
 `VITE_API_BASE_URL` is public build-time configuration. Do not put secrets in
 variables beginning with `VITE_`.
@@ -74,7 +73,7 @@ Build with the deployed API URL:
 
 ```powershell
 cd mobile
-flutter build appbundle --dart-define=API_BASE_URL=https://<your-railway-api-domain>
+flutter build appbundle --dart-define=API_BASE_URL=https://<your-render-api-domain>
 ```
 
 The resulting Android App Bundle is at
@@ -87,10 +86,9 @@ matching SHA-1/SHA-256 fingerprints in Firebase/Google OAuth.
 
 - Rotate the Gmail app password and JWT secret that were previously committed
   in `backend/.env.example`. They must be treated as compromised.
-- Store all new secrets only in Railway's environment-variable settings.
+- Store all new secrets only in Render's environment-variable settings.
 - The tracked test resumes have been removed from Git tracking and the upload
   directory is ignored. They remain on your local machine.
-- The Railway volume keeps uploaded files across deployments. For multiple API
-  replicas or higher-scale production, migrate resume storage to S3, Cloudinary,
-  or Supabase Storage.
+- Render free services have ephemeral storage, so migrate resume storage to S3,
+  Cloudinary, or Supabase Storage before collecting real documents.
 - Set up a custom domain and HTTPS before sharing the app publicly.
