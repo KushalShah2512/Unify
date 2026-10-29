@@ -41,6 +41,43 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:729101956164:android:2ac7e2fc5b33e7f5397811",
+        "android_client_info": {
+          "package_name": "com.kushalshah2512.unify"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "729101956164-2fmpb063pl920u86efo5dtlr0eunvuma.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kushalshah2512.unify",
+            "certificate_hash": "c52a346d216fd70b3165815758d256f7f71e6e08"
+          }
+        },
+        {
+          "client_id": "729101956164-rm9npvconf2bulul56b0239v4jqgoq36.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhK1hXWJOD7NbI1NabmU8xoUuTZ27Ig7k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "729101956164-rm9npvconf2bulul56b0239v4jqgoq36.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
