@@ -39,6 +39,7 @@ model StudentProfile {
   resumeSize         Int?
   resumeUpdatedAt    DateTime?
   isResumeVerified   Boolean   @default(false)
+  resumeStorageKey   String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

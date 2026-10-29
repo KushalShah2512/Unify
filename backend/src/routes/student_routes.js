@@ -1,7 +1,6 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
-const { resumeUploadDir } = require("../config/uploads");
 
 const {
   createProfile,
@@ -17,20 +16,19 @@ const { authorizeRoles } = require("../middleware/role_middleware");
 
 const router = express.Router();
 
-// Multer storage for uploaded resume documents
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, resumeUploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `resume-${req.user.userId}-${Date.now()}${ext}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    const allowedExtensions = new Set([".pdf", ".docx", ".txt"]);
+
+    if (!allowedExtensions.has(extension)) {
+      return cb(new Error("Only PDF, DOCX, and TXT resumes are allowed."));
+    }
+
+    return cb(null, true);
+  },
 });
 
 router.post(

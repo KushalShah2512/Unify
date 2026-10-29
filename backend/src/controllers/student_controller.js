@@ -1,4 +1,25 @@
 const prisma = require("../config/database");
+const path = require("path");
+const { cloudinary, isCloudinaryConfigured } = require("../config/cloudinary");
+
+const uploadResumeToCloudinary = (file, userId) => {
+  const extension = path.extname(file.originalname).toLowerCase() || ".bin";
+  const publicId = `resume-${userId}-${Date.now()}${extension}`;
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: "raw",
+        folder: "unify/resumes",
+        public_id: publicId,
+        type: "upload",
+      },
+      (error, result) => (error ? reject(error) : resolve(result))
+    );
+
+    uploadStream.end(file.buffer);
+  });
+};
 
 const createProfile = async (req, res) => {
   try {
@@ -196,22 +217,37 @@ const uploadResume = async (req, res) => {
       });
     }
 
-    const publicBaseUrl = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
-    const host = req.get("host") || "localhost:5000";
-    const protocol = req.protocol || "http";
-    const baseUrl = publicBaseUrl || `${protocol}://${host}`;
-    const resumeUrl = `${baseUrl}/uploads/resumes/${req.file.filename}`;
+    if (!isCloudinaryConfigured()) {
+      return res.status(503).json({
+        status: "error",
+        message: "Resume storage is not configured. Please contact support.",
+      });
+    }
+
+    const existingProfile = await prisma.studentProfile.findUnique({
+      where: { userId: req.user.userId },
+      select: { resumeStorageKey: true },
+    });
+
+    const uploadResult = await uploadResumeToCloudinary(req.file, req.user.userId);
 
     const profile = await prisma.studentProfile.update({
       where: { userId: req.user.userId },
       data: {
-        resumeUrl,
+        resumeUrl: uploadResult.secure_url,
         resumeName: req.file.originalname,
         resumeSize: req.file.size,
         resumeUpdatedAt: new Date(),
         isResumeVerified: false,
+        resumeStorageKey: uploadResult.public_id,
       },
     });
+
+    if (existingProfile?.resumeStorageKey) {
+      cloudinary.uploader
+        .destroy(existingProfile.resumeStorageKey, { resource_type: "raw" })
+        .catch((error) => console.error("Failed to remove previous resume:", error));
+    }
 
     // Notify user of upload
     try {
@@ -273,6 +309,11 @@ const getResume = async (req, res) => {
 
 const deleteResume = async (req, res) => {
   try {
+    const existingProfile = await prisma.studentProfile.findUnique({
+      where: { userId: req.user.userId },
+      select: { resumeStorageKey: true },
+    });
+
     await prisma.studentProfile.update({
       where: { userId: req.user.userId },
       data: {
@@ -281,8 +322,13 @@ const deleteResume = async (req, res) => {
         resumeSize: null,
         resumeUpdatedAt: null,
         isResumeVerified: false,
+        resumeStorageKey: null,
       },
     });
+
+    if (existingProfile?.resumeStorageKey && isCloudinaryConfigured()) {
+      await cloudinary.uploader.destroy(existingProfile.resumeStorageKey, { resource_type: "raw" });
+    }
 
     return res.status(200).json({
       status: "success",
