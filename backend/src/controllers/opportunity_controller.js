@@ -104,7 +104,7 @@ const applyToOpportunity = async (req, res) => {
     console.error("Apply opportunity error:", error);
     return res.status(500).json({
       status: "error",
-      message: "Failed to submit application",
+      message: error.message || "Failed to submit application",
     });
   }
 };
