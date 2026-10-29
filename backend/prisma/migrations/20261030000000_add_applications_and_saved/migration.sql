@@ -79,3 +79,4 @@ ALTER TABLE "OpportunityReport" ADD CONSTRAINT "OpportunityReport_opportunityId_
 -- AddForeignKey
 ALTER TABLE "OpportunityReport" DROP CONSTRAINT IF EXISTS "OpportunityReport_studentId_fkey";
 ALTER TABLE "OpportunityReport" ADD CONSTRAINT "OpportunityReport_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "StudentProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
