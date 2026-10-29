@@ -6,7 +6,7 @@ class ApiService {
   /// The fallback is only for local development.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.23.17.10:5000',
+    defaultValue: 'https://unify-api-3mks.onrender.com',
   );
 
   late final Dio dio;
