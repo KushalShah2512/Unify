@@ -1,5 +1,25 @@
 const prisma = require("../config/database");
 
+// Helper to ensure a student profile exists for the user
+const ensureStudentProfile = async (userId) => {
+  let profile = await prisma.studentProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!profile) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const defaultName = user && user.email ? user.email.split("@")[0] : "Student";
+    profile = await prisma.studentProfile.create({
+      data: {
+        userId,
+        fullName: defaultName,
+      },
+    });
+  }
+
+  return profile;
+};
+
 // ====================
 // Get Active Opportunities
 // ====================
@@ -36,16 +56,7 @@ const applyToOpportunity = async (req, res) => {
     const opportunityId = Number(req.params.id);
     const { coverLetter } = req.body;
 
-    const studentProfile = await prisma.studentProfile.findUnique({
-      where: { userId: req.user.userId },
-    });
-
-    if (!studentProfile) {
-      return res.status(404).json({
-        status: "error",
-        message: "Please complete your student profile before applying",
-      });
-    }
+    const studentProfile = await ensureStudentProfile(req.user.userId);
 
     const opportunity = await prisma.opportunity.findUnique({
       where: { id: opportunityId },
@@ -108,9 +119,9 @@ const getMyApplications = async (req, res) => {
     });
 
     if (!studentProfile) {
-      return res.status(404).json({
-        status: "error",
-        message: "Student profile not found",
+      return res.status(200).json({
+        status: "success",
+        applications: [],
       });
     }
 
@@ -142,16 +153,7 @@ const toggleSaveOpportunity = async (req, res) => {
   try {
     const opportunityId = Number(req.params.id);
 
-    const studentProfile = await prisma.studentProfile.findUnique({
-      where: { userId: req.user.userId },
-    });
-
-    if (!studentProfile) {
-      return res.status(404).json({
-        status: "error",
-        message: "Student profile not found",
-      });
-    }
+    const studentProfile = await ensureStudentProfile(req.user.userId);
 
     const existing = await prisma.savedOpportunity.findUnique({
       where: {
@@ -170,6 +172,7 @@ const toggleSaveOpportunity = async (req, res) => {
       return res.status(200).json({
         status: "success",
         isSaved: false,
+        saved: false,
         message: "Opportunity removed from saved bookmarks",
       });
     }
@@ -184,6 +187,7 @@ const toggleSaveOpportunity = async (req, res) => {
     return res.status(201).json({
       status: "success",
       isSaved: true,
+      saved: true,
       message: "Opportunity saved to bookmarks",
     });
   } catch (error) {
@@ -205,9 +209,10 @@ const getSavedOpportunities = async (req, res) => {
     });
 
     if (!studentProfile) {
-      return res.status(404).json({
-        status: "error",
-        message: "Student profile not found",
+      return res.status(200).json({
+        status: "success",
+        savedOpportunities: [],
+        data: [],
       });
     }
 
@@ -219,12 +224,16 @@ const getSavedOpportunities = async (req, res) => {
       orderBy: { savedAt: "desc" },
     });
 
+    const mapped = saved.map((s) => ({
+      ...s.opportunity,
+      opportunityId: s.opportunityId,
+      savedAt: s.savedAt,
+    }));
+
     return res.status(200).json({
       status: "success",
-      savedOpportunities: saved.map((s) => ({
-        ...s.opportunity,
-        savedAt: s.savedAt,
-      })),
+      savedOpportunities: mapped,
+      data: mapped,
     });
   } catch (error) {
     console.error("Get saved opportunities error:", error);

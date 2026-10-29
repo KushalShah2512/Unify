@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:unify/core/routes/route_names.dart';
 import 'package:unify/core/services/api_service.dart';
@@ -20,11 +21,34 @@ class _OpportunityDetailsScreenState extends State<OpportunityDetailsScreen> {
   final ApiService _apiService = ApiService();
   bool _isSaved = false;
   bool _isApplying = false;
+  bool _hasApplied = false;
 
   @override
   void initState() {
     super.initState();
     _checkIfSaved();
+    _checkIfApplied();
+  }
+
+  Future<void> _checkIfApplied() async {
+    try {
+      final oppId = widget.opportunity['id'] is int
+          ? widget.opportunity['id'] as int
+          : int.tryParse(widget.opportunity['id'].toString()) ?? 0;
+
+      final res = await _apiService.getMyApplications();
+      if (res.statusCode == 200 && res.data['applications'] != null) {
+        final list = (res.data['applications'] as List?) ?? [];
+        final isApplied = list.any((app) {
+          final id = app['opportunityId'] ??
+              (app['opportunity'] is Map ? app['opportunity']['id'] : null);
+          return id == oppId;
+        });
+        if (mounted && isApplied) {
+          setState(() => _hasApplied = true);
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _checkIfSaved() async {
@@ -79,22 +103,41 @@ class _OpportunityDetailsScreenState extends State<OpportunityDetailsScreen> {
       try {
         final response = await _apiService.applyToOpportunity(opportunityId: oppId);
         if (!mounted) return;
+        setState(() => _hasApplied = true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response.data['message'] ?? 'Application submitted successfully!'),
             backgroundColor: const Color(0xFF10B981),
+            action: SnackBarAction(
+              label: 'View',
+              textColor: Colors.white,
+              onPressed: () {
+                context.pop(true);
+              },
+            ),
           ),
         );
-      } catch (e) {
+      } on DioException catch (e) {
         if (!mounted) return;
+        if (e.response?.statusCode == 409) {
+          setState(() => _hasApplied = true);
+        }
+        final responseData = e.response?.data;
+        final message = responseData is Map && responseData['message'] != null
+            ? responseData['message'].toString()
+            : 'Unable to submit your application. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              e.toString().contains('already applied')
-                  ? 'You have already applied to this opportunity'
-                  : 'Application recorded!',
-            ),
-            backgroundColor: const Color(0xFF4F46E5),
+            content: Text(message),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to submit your application. Please try again.'),
+            backgroundColor: Color(0xFFEF4444),
           ),
         );
       } finally {
@@ -351,6 +394,10 @@ class _OpportunityDetailsScreenState extends State<OpportunityDetailsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(_hasApplied),
+        ),
         title: const Text(
           'Opportunity Details',
           style: TextStyle(
@@ -620,7 +667,7 @@ class _OpportunityDetailsScreenState extends State<OpportunityDetailsScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: _isApplying ? null : _apply,
+                  onPressed: _isApplying || _hasApplied ? null : _apply,
                   icon: _isApplying
                       ? const SizedBox(
                           width: 18,
@@ -629,7 +676,11 @@ class _OpportunityDetailsScreenState extends State<OpportunityDetailsScreen> {
                         )
                       : const Icon(Icons.send_rounded, size: 18),
                   label: Text(
-                    _isApplying ? 'Submitting...' : 'Apply for Opportunity',
+                    _isApplying
+                        ? 'Submitting...'
+                        : _hasApplied
+                            ? 'Application Submitted'
+                            : 'Apply for Opportunity',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,

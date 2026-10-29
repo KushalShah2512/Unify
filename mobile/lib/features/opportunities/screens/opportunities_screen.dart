@@ -47,6 +47,7 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
       vsync: this,
       initialIndex: widget.initialTab.clamp(0, 1),
     );
+    _tabController.addListener(_handleTabChange);
 
     _searchController.addListener(_applyFilters);
     _loadAllData();
@@ -54,9 +55,21 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  int _lastTabIndex = 0;
+
+  void _handleTabChange() {
+    if (_tabController.index != _lastTabIndex) {
+      _lastTabIndex = _tabController.index;
+      if (_lastTabIndex == 1) {
+        _loadMyApplications();
+      }
+    }
   }
 
   Future<void> _loadAllData() async {
@@ -87,9 +100,16 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
       // Fetch saved opportunities
       try {
         final savedRes = await _apiService.getSavedOpportunities();
-        if (savedRes.statusCode == 200 && savedRes.data['data'] != null) {
-          final savedList = (savedRes.data['data'] as List?) ?? [];
-          final ids = savedList.map<int>((s) => (s['opportunityId'] as int)).toSet();
+        if (savedRes.statusCode == 200) {
+          final savedList = (savedRes.data['data'] as List?) ??
+              (savedRes.data['savedOpportunities'] as List?) ??
+              [];
+          final ids = savedList
+              .map<int?>((s) => (s['opportunityId'] ?? s['id']) is int
+                  ? (s['opportunityId'] ?? s['id']) as int
+                  : int.tryParse((s['opportunityId'] ?? s['id']).toString()))
+              .whereType<int>()
+              .toSet();
           if (mounted) {
             setState(() {
               _savedOpportunityIds = ids;
@@ -500,6 +520,18 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
           opportunity: opportunity,
           isSaved: isSaved,
           onToggleSave: () => _toggleSaveOpportunity(oppId),
+          onTap: () async {
+            final applied = await context.push(
+              RouteNames.opportunityDetails,
+              extra: Map<String, dynamic>.from(opportunity),
+            );
+            if (mounted) {
+              _loadMyApplications();
+              if (applied == true) {
+                _tabController.animateTo(1);
+              }
+            }
+          },
         );
       },
     );
@@ -540,45 +572,55 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
     }
 
     if (_myApplications.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  shape: BoxShape.circle,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEEF2FF),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.send_outlined, size: 42, color: Color(0xFF4F46E5)),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No applications yet',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Browse available roles in the Explore tab and submit your Career Passport to start interviewing.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => _tabController.animateTo(0),
+                        icon: const Icon(Icons.explore, size: 18),
+                        label: const Text('Explore Open Roles'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4F46E5),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Icon(Icons.send_outlined, size: 42, color: Color(0xFF4F46E5)),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'No applications yet',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Browse available roles in the Explore tab and submit your Career Passport to start interviewing.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => _tabController.animateTo(0),
-                icon: const Icon(Icons.explore, size: 18),
-                label: const Text('Explore Open Roles'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F46E5),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       );
     }
 
@@ -587,7 +629,7 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
       itemCount: _myApplications.length,
       itemBuilder: (context, index) {
         final app = _myApplications[index];
-        final opp = app['opportunity'] as Map<String, dynamic>? ?? {};
+        final opp = (app['opportunity'] as Map?)?.cast<String, dynamic>() ?? {};
         final status = (app['status'] ?? 'APPLIED').toString();
         final statusColor = _getStatusColor(status);
         final statusLabel = _formatStatusLabel(status);
@@ -725,11 +767,14 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen>
                       ],
                     ),
                     TextButton(
-                      onPressed: () {
-                        context.push(
+                      onPressed: () async {
+                        await context.push(
                           RouteNames.opportunityDetails,
                           extra: opp,
                         );
+                        if (mounted) {
+                          _loadMyApplications();
+                        }
                       },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
@@ -767,11 +812,13 @@ class _OpportunityCard extends StatelessWidget {
   final dynamic opportunity;
   final bool isSaved;
   final VoidCallback onToggleSave;
+  final VoidCallback? onTap;
 
   const _OpportunityCard({
     required this.opportunity,
     required this.isSaved,
     required this.onToggleSave,
+    this.onTap,
   });
 
   String _formatCurrency(dynamic val) {
@@ -818,7 +865,7 @@ class _OpportunityCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
+          onTap: onTap ?? () {
             context.push(
               RouteNames.opportunityDetails,
               extra: Map<String, dynamic>.from(opportunity),
